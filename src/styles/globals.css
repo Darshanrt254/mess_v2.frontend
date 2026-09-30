@@ -1,0 +1,54 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: #FFD93D;
+  --green: #1B5E20;
+  --green-mid: #2E7D32;
+  --green-light: #4CAF50;
+  --green-pale: #A5D6A7;
+  --orange: #FF8C00;
+  --orange-light: #FFB347;
+  --white: #FFFDE7;
+  --card-bg: #FFF8E1;
+  --shadow: 0 4px 16px rgba(255, 140, 0, 0.35);
+  --shadow-lg: 0 8px 28px rgba(255, 140, 0, 0.45);
+  --radius: 18px;
+  --radius-sm: 10px;
+}
+
+@layer base {
+  body {
+    @apply font-nunito bg-brand-creamLight text-brand-darkGreen min-h-screen antialiased;
+  }
+
+  /* Custom scrollbar matching Swayamsiddha brand */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: #FDF4D4;
+    border-radius: 9999px;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #FF8C00;
+    border-radius: 9999px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #e67e00;
+  }
+}
+
+@layer utilities {
+  .text-shadow-brand {
+    text-shadow: 2px 2px 0px rgba(255, 140, 0, 0.85);
+  }
+  .text-shadow-sm {
+    text-shadow: 1px 1px 0px rgba(255, 140, 0, 0.6);
+  }
+}

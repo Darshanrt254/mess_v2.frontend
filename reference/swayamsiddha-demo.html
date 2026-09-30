@@ -1,0 +1,927 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+    <title>Swayamsiddha Mess Attendance</title>
+    <meta name="description"
+        content="Track daily tiffin and mess attendance for Swayamsiddha Mess — mark meals, view owner stats, and analyse monthly trends." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap"
+        rel="stylesheet" />
+    <style>
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0
+        }
+
+        :root {
+            --bg: #FFD93D;
+            --green: #1B5E20;
+            --green-mid: #2E7D32;
+            --green-light: #4CAF50;
+            --green-pale: #A5D6A7;
+            --orange: #FF8C00;
+            --orange-light: #FFB347;
+            --white: #FFFDE7;
+            --card-bg: #FFF8E1;
+            --shadow: 0 4px 16px rgba(255, 140, 0, 0.35);
+            --shadow-lg: 0 8px 28px rgba(255, 140, 0, 0.45);
+            --radius: 18px;
+            --radius-sm: 10px;
+            --font: 'Nunito', sans-serif
+        }
+
+        html,
+        body {
+            font-family: var(--font);
+            background: var(--bg);
+            color: var(--green);
+            min-height: 100vh;
+            max-width: 480px;
+            margin: 0 auto
+        }
+
+        .navbar {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: var(--green);
+            padding: 0 6px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25)
+        }
+
+        .nav-brand {
+            color: var(--bg);
+            font-size: .82rem;
+            font-weight: 900;
+            white-space: nowrap;
+            padding: 10px 4px;
+            letter-spacing: .3px;
+            flex-shrink: 0
+        }
+
+        .nav-tabs {
+            display: flex;
+            gap: 2px;
+            padding: 6px 0
+        }
+
+        .nav-tab {
+            background: transparent;
+            border: none;
+            color: var(--green-pale);
+            font-family: var(--font);
+            font-size: .72rem;
+            font-weight: 800;
+            padding: 7px 10px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all .2s ease;
+            white-space: nowrap
+        }
+
+        .nav-tab.active {
+            background: var(--bg);
+            color: var(--green)
+        }
+
+        .nav-tab:hover:not(.active) {
+            background: rgba(255, 255, 255, .12);
+            color: #fff
+        }
+
+        .page {
+            display: none;
+            padding: 18px 14px 90px;
+            animation: fadeIn .25s ease
+        }
+
+        .page.active {
+            display: block
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(6px)
+            }
+
+            to {
+                opacity: 1;
+                transform: none
+            }
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            border: 2.5px solid var(--orange);
+            box-shadow: var(--shadow);
+            padding: 18px;
+            margin-bottom: 16px
+        }
+
+        .card-title {
+            font-size: 1rem;
+            font-weight: 900;
+            color: var(--green);
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 7px
+        }
+
+        .page-header {
+            text-align: center;
+            margin-bottom: 22px
+        }
+
+        .page-header h1 {
+            font-size: 1.65rem;
+            font-weight: 900;
+            color: var(--green);
+            text-shadow: 2px 2px 0px var(--orange);
+            line-height: 1.15
+        }
+
+        .page-header .date-sub {
+            font-size: .82rem;
+            font-weight: 700;
+            color: var(--green-mid);
+            margin-top: 4px;
+            opacity: .85
+        }
+
+        .meal-btn {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            padding: 18px 22px;
+            border-radius: var(--radius);
+            border: 3px solid var(--orange);
+            background: var(--card-bg);
+            box-shadow: var(--shadow);
+            font-family: var(--font);
+            font-size: 1.15rem;
+            font-weight: 900;
+            color: var(--green);
+            cursor: pointer;
+            margin-bottom: 14px;
+            transition: all .2s ease
+        }
+
+        .meal-btn.marked {
+            background: var(--green);
+            color: var(--bg);
+            border-color: var(--green-mid);
+            box-shadow: 0 6px 20px rgba(27, 94, 32, .4)
+        }
+
+        .meal-btn:active {
+            transform: scale(.97)
+        }
+
+        .btn-badge {
+            font-size: .75rem;
+            font-weight: 800;
+            padding: 4px 10px;
+            border-radius: 20px
+        }
+
+        .meal-btn:not(.marked) .btn-badge {
+            background: var(--orange-light);
+            color: var(--green)
+        }
+
+        .meal-btn.marked .btn-badge {
+            background: var(--bg);
+            color: var(--green)
+        }
+
+        .cal-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 4px;
+            margin-top: 8px
+        }
+
+        .cal-day-label {
+            text-align: center;
+            font-size: .62rem;
+            font-weight: 800;
+            color: var(--green-mid);
+            padding-bottom: 4px
+        }
+
+        .cal-cell {
+            aspect-ratio: 1;
+            border-radius: 7px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: .6rem;
+            font-weight: 800;
+            cursor: default;
+            border: 1.5px solid transparent;
+            transition: transform .15s
+        }
+
+        .cal-cell:hover {
+            transform: scale(1.15)
+        }
+
+        .cal-cell.both {
+            background: #1B5E20;
+            color: #FFD93D;
+            border-color: #FF8C00
+        }
+
+        .cal-cell.one {
+            background: #81C784;
+            color: #1B5E20;
+            border-color: #FF8C00
+        }
+
+        .cal-cell.none {
+            background: #E8E8E8;
+            color: #9E9E9E;
+            border-color: #ddd
+        }
+
+        .cal-cell.empty {
+            background: transparent;
+            border-color: transparent
+        }
+
+        .cal-cell.today {
+            outline: 2.5px solid var(--orange);
+            outline-offset: 1px
+        }
+
+        .cal-legend {
+            display: flex;
+            gap: 12px;
+            margin-top: 10px;
+            justify-content: center;
+            flex-wrap: wrap
+        }
+
+        .leg-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: .68rem;
+            font-weight: 700;
+            color: var(--green-mid)
+        }
+
+        .leg-dot {
+            width: 13px;
+            height: 13px;
+            border-radius: 4px;
+            border: 1.5px solid var(--orange)
+        }
+
+        .date-input {
+            width: 100%;
+            padding: 11px 14px;
+            border-radius: var(--radius-sm);
+            border: 2.5px solid var(--orange);
+            background: var(--card-bg);
+            font-family: var(--font);
+            font-size: .95rem;
+            font-weight: 700;
+            color: var(--green);
+            box-shadow: var(--shadow);
+            outline: none;
+            margin-bottom: 16px
+        }
+
+        .stat-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 16px
+        }
+
+        .stat-block {
+            background: var(--green);
+            color: var(--bg);
+            border-radius: var(--radius);
+            padding: 16px 12px;
+            text-align: center;
+            border: 2.5px solid var(--orange);
+            box-shadow: var(--shadow)
+        }
+
+        .stat-block .stat-num {
+            font-size: 2rem;
+            font-weight: 900;
+            line-height: 1
+        }
+
+        .stat-block .stat-label {
+            font-size: .72rem;
+            font-weight: 800;
+            margin-top: 4px;
+            opacity: .88
+        }
+
+        .customer-list {
+            max-height: 320px;
+            overflow-y: auto;
+            padding-right: 4px
+        }
+
+        .customer-list::-webkit-scrollbar {
+            width: 5px
+        }
+
+        .customer-list::-webkit-scrollbar-track {
+            background: #f0e8c8;
+            border-radius: 4px
+        }
+
+        .customer-list::-webkit-scrollbar-thumb {
+            background: var(--orange);
+            border-radius: 4px
+        }
+
+        .customer-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 4px;
+            border-bottom: 1.5px dashed #e0c870
+        }
+
+        .customer-row:last-child {
+            border-bottom: none
+        }
+
+        .cust-name {
+            font-size: .88rem;
+            font-weight: 800;
+            color: var(--green)
+        }
+
+        .cust-meals {
+            display: flex;
+            gap: 6px
+        }
+
+        .meal-pill {
+            font-size: .68rem;
+            font-weight: 800;
+            padding: 3px 9px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            gap: 3px
+        }
+
+        .meal-pill.yes {
+            background: #1B5E20;
+            color: #FFD93D
+        }
+
+        .meal-pill.no {
+            background: #E8E8E8;
+            color: #9E9E9E;
+            text-decoration: line-through
+        }
+
+        .feedback-item {
+            background: var(--bg);
+            border-radius: var(--radius-sm);
+            border: 2px solid var(--orange-light);
+            padding: 10px 12px;
+            margin-bottom: 8px
+        }
+
+        .fb-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 4px
+        }
+
+        .fb-name {
+            font-size: .8rem;
+            font-weight: 900;
+            color: var(--green)
+        }
+
+        .fb-time {
+            font-size: .68rem;
+            font-weight: 700;
+            color: #888
+        }
+
+        .fb-msg {
+            font-size: .82rem;
+            font-weight: 600;
+            color: var(--green-mid)
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 18px
+        }
+
+        .summary-card {
+            background: var(--card-bg);
+            border: 2.5px solid var(--orange);
+            border-radius: var(--radius);
+            padding: 16px 12px;
+            text-align: center;
+            box-shadow: var(--shadow);
+            transition: transform .15s
+        }
+
+        .summary-card:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-lg)
+        }
+
+        .summary-card .s-icon {
+            font-size: 1.6rem;
+            margin-bottom: 5px
+        }
+
+        .summary-card .s-num {
+            font-size: 1.6rem;
+            font-weight: 900;
+            color: var(--green);
+            line-height: 1
+        }
+
+        .summary-card .s-label {
+            font-size: .7rem;
+            font-weight: 800;
+            color: var(--green-mid);
+            margin-top: 4px
+        }
+
+        .pills-wrap {
+            display: flex;
+            flex-direction: column;
+            gap: 9px;
+            margin-bottom: 14px
+        }
+
+        .pill-btn {
+            background: var(--card-bg);
+            border: 2.5px solid var(--orange);
+            border-radius: 30px;
+            padding: 11px 16px;
+            font-family: var(--font);
+            font-size: .82rem;
+            font-weight: 800;
+            color: var(--green);
+            text-align: left;
+            cursor: pointer;
+            box-shadow: var(--shadow);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all .18s ease
+        }
+
+        .pill-btn:hover,
+        .pill-btn.active {
+            background: var(--orange);
+            color: var(--white)
+        }
+
+        .pill-btn:active {
+            transform: scale(.97)
+        }
+
+        .qa-answer {
+            background: var(--green);
+            color: var(--bg);
+            border-radius: var(--radius-sm);
+            padding: 14px 16px;
+            font-size: .88rem;
+            font-weight: 700;
+            line-height: 1.5;
+            margin-bottom: 16px;
+            border: 2.5px solid var(--orange);
+            box-shadow: var(--shadow);
+            display: none;
+            animation: fadeIn .2s ease;
+            white-space: pre-line
+        }
+
+        .qa-answer.visible {
+            display: block
+        }
+
+        .section-label {
+            font-size: .78rem;
+            font-weight: 900;
+            color: var(--orange);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px
+        }
+
+        .export-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
+            padding: 16px;
+            border-radius: var(--radius);
+            border: 3px solid var(--orange);
+            background: var(--green);
+            color: var(--bg);
+            font-family: var(--font);
+            font-size: 1.05rem;
+            font-weight: 900;
+            cursor: pointer;
+            box-shadow: var(--shadow-lg);
+            transition: all .2s ease
+        }
+
+        .export-btn:hover {
+            background: var(--green-mid);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 32px rgba(255, 140, 0, .5)
+        }
+
+        .export-btn:active {
+            transform: scale(.97)
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%) translateY(80px);
+            background: var(--green);
+            color: var(--bg);
+            padding: 12px 24px;
+            border-radius: 30px;
+            font-size: .88rem;
+            font-weight: 800;
+            border: 2.5px solid var(--orange);
+            box-shadow: var(--shadow-lg);
+            transition: transform .3s cubic-bezier(.34, 1.56, .64, 1);
+            z-index: 999;
+            white-space: nowrap
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0)
+        }
+
+        /* ── Message Box ── */
+        .msg-name-input,
+        .msg-textarea {
+            width: 100%;
+            font-family: var(--font);
+            font-weight: 700;
+            color: var(--green);
+            background: var(--bg);
+            border: 2.5px solid var(--orange);
+            border-radius: var(--radius-sm);
+            padding: 10px 13px;
+            outline: none;
+            box-shadow: inset 0 2px 6px rgba(255, 140, 0, .15);
+            resize: none;
+            margin-bottom: 10px;
+            display: block
+        }
+
+        .msg-name-input {
+            font-size: .88rem
+        }
+
+        .msg-textarea {
+            font-size: .9rem;
+            min-height: 88px;
+            line-height: 1.5
+        }
+
+        .msg-name-input::placeholder,
+        .msg-textarea::placeholder {
+            color: #a0862a;
+            font-weight: 600
+        }
+
+        .send-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
+            padding: 13px;
+            border-radius: var(--radius);
+            border: 2.5px solid var(--orange);
+            background: var(--orange);
+            color: var(--white);
+            font-family: var(--font);
+            font-size: 1rem;
+            font-weight: 900;
+            cursor: pointer;
+            box-shadow: var(--shadow);
+            transition: all .2s ease
+        }
+
+        .send-btn:hover {
+            background: #e07a00;
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg)
+        }
+
+        .send-btn:active {
+            transform: scale(.97)
+        }
+
+        .sent-msgs {
+            margin-top: 12px
+        }
+
+        .sent-msg-item {
+            background: var(--green);
+            color: var(--bg);
+            border-radius: var(--radius-sm);
+            padding: 10px 13px;
+            margin-bottom: 8px;
+            border: 2px solid var(--orange-light);
+            animation: fadeIn .25s ease
+        }
+
+        .sent-msg-meta {
+            font-size: .68rem;
+            font-weight: 800;
+            opacity: .75;
+            margin-bottom: 3px
+        }
+
+        .sent-msg-body {
+            font-size: .84rem;
+            font-weight: 700;
+            line-height: 1.45
+        }
+    </style>
+</head>
+
+<body>
+
+    <nav class="navbar">
+        <div class="nav-brand">🍱 Swayamsiddha Mess</div>
+        <div class="nav-tabs">
+            <button class="nav-tab active" id="tab-attendance" onclick="switchPage('attendance')">Attendance</button>
+            <button class="nav-tab" id="tab-owner" onclick="switchPage('owner')">Owner</button>
+            <button class="nav-tab" id="tab-stats" onclick="switchPage('stats')">Stats</button>
+        </div>
+    </nav>
+
+    <!-- ATTENDANCE PAGE -->
+    <div class="page active" id="page-attendance">
+        <div class="page-header">
+            <h1>📋 Today's<br>Attendance</h1>
+            <div class="date-sub" id="today-date-label"></div>
+        </div>
+        <button class="meal-btn" id="btn-lunch" onclick="toggleMeal('lunch')">
+            <span class="btn-label" id="lunch-label">🌤️ Mark Lunch</span>
+            <span class="btn-badge" id="lunch-badge">Tap to mark</span>
+        </button>
+        <button class="meal-btn" id="btn-dinner" onclick="toggleMeal('dinner')">
+            <span class="btn-label" id="dinner-label">🌙 Mark Dinner</span>
+            <span class="btn-badge" id="dinner-badge">Tap to mark</span>
+        </button>
+        <div class="card">
+            <div class="card-title">📅 September 2026</div>
+            <div class="cal-grid" id="cal-grid"></div>
+            <div class="cal-legend">
+                <div class="leg-item">
+                    <div class="leg-dot" style="background:#1B5E20"></div> Both meals
+                </div>
+                <div class="leg-item">
+                    <div class="leg-dot" style="background:#81C784;border-color:#FF8C00"></div> One meal
+                </div>
+                <div class="leg-item">
+                    <div class="leg-dot" style="background:#E8E8E8;border-color:#ddd"></div> Absent
+                </div>
+            </div>
+        </div>
+
+        <!-- Send Message Card -->
+        <div class="card">
+            <div class="card-title">📩 Message the Restaurant</div>
+            <textarea class="msg-textarea" id="msg-text" placeholder="Type your message, complaint, or request here…"
+                maxlength="300"></textarea>
+            <button class="send-btn" onclick="sendMessage()">🚀 Send Message</button>
+            <div class="sent-msgs" id="sent-msgs"></div>
+        </div>
+    </div>
+
+    <!-- OWNER VIEW PAGE -->
+    <div class="page" id="page-owner">
+        <div class="page-header">
+            <h1>🏠 Owner View</h1>
+            <div class="date-sub">Manage customers &amp; meals</div>
+        </div>
+        <input type="date" class="date-input" id="owner-date" />
+        <div class="stat-row">
+            <div class="stat-block">
+                <div class="stat-num">32</div>
+                <div class="stat-label">🌤️ Lunch Today</div>
+            </div>
+            <div class="stat-block">
+                <div class="stat-num">28</div>
+                <div class="stat-label">🌙 Dinner Today</div>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-title">👥 Customer List</div>
+            <div class="customer-list" id="customer-list"></div>
+        </div>
+        <div class="card">
+            <div class="card-title">💬 Customer Feedback</div>
+            <div id="feedback-list"></div>
+        </div>
+    </div>
+
+    <!-- STATS PAGE -->
+    <div class="page" id="page-stats">
+        <div class="page-header">
+            <h1>📊 Stats &amp;<br>Analytics</h1>
+            <div class="date-sub">September 2026 Overview</div>
+        </div>
+        <div class="summary-grid">
+            <div class="summary-card">
+                <div class="s-icon">👥</div>
+                <div class="s-num">42</div>
+                <div class="s-label">Total Customers</div>
+            </div>
+            <div class="summary-card">
+                <div class="s-icon">📈</div>
+                <div class="s-num">91%</div>
+                <div class="s-label">Avg Attendance</div>
+            </div>
+            <div class="summary-card">
+                <div class="s-icon">💰</div>
+                <div class="s-num">₹38.5k</div>
+                <div class="s-label">Monthly Revenue</div>
+            </div>
+            <div class="summary-card">
+                <div class="s-icon">⚠️</div>
+                <div class="s-num">4</div>
+                <div class="s-label">Pending Payments</div>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-title">⚡ Quick Answers</div>
+            <div class="section-label">Tap a question for the answer</div>
+            <div class="pills-wrap" id="pills-wrap"></div>
+            <div class="qa-answer" id="qa-answer"></div>
+        </div>
+        <button class="export-btn" onclick="handleExport()">
+            📊 Export to XLSX
+            <span style="font-size:.72rem;font-weight:700;opacity:.8">(This month)</span>
+        </button>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        function $(id) { return document.getElementById(id) }
+        function showToast(msg) { var t = $('toast'); t.textContent = msg; t.classList.add('show'); setTimeout(function () { t.classList.remove('show') }, 2600) }
+        function switchPage(name) { document.querySelectorAll('.page').forEach(function (p) { p.classList.remove('active') }); document.querySelectorAll('.nav-tab').forEach(function (t) { t.classList.remove('active') }); $('page-' + name).classList.add('active'); $('tab-' + name).classList.add('active') }
+
+        var DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        var MONTH_LONG = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+        function fmtDate(d) { return DAY_NAMES[d.getDay()] + ', ' + d.getDate() + ' ' + MONTH_LONG[d.getMonth()] + ' ' + d.getFullYear() }
+        var NOW = new Date(2026, 8, 24);
+        $('today-date-label').textContent = fmtDate(NOW);
+        $('owner-date').value = '2026-09-24';
+
+        var mealState = { lunch: false, dinner: false };
+        function toggleMeal(meal) {
+            mealState[meal] = !mealState[meal];
+            var btn = $('btn-' + meal);
+            var label = $(meal + '-label');
+            var badge = $(meal + '-badge');
+            var icon = meal === 'lunch' ? '🌤️' : '🌙';
+            var name = meal === 'lunch' ? 'Lunch' : 'Dinner';
+            if (mealState[meal]) { btn.classList.add('marked'); label.textContent = '✅ ' + name + ' Marked!'; badge.textContent = 'Marked ✓'; showToast(name + ' marked for today! 🎉') }
+            else { btn.classList.remove('marked'); label.textContent = icon + ' Mark ' + name; badge.textContent = 'Tap to mark' }
+        }
+
+        (function buildCal() {
+            var data = { 1: 2, 2: 2, 3: 2, 4: 1, 5: 2, 6: 0, 7: 2, 8: 2, 9: 2, 10: 1, 11: 2, 12: 2, 13: 0, 14: 2, 15: 2, 16: 1, 17: 2, 18: 2, 19: 1, 20: 0, 21: 2, 22: 2, 23: 2, 24: 2, 25: 0, 26: 0, 27: 0, 28: 0, 29: 0, 30: 0 };
+            var today = 24; var daysInMonth = 30; var firstDay = new Date(2026, 8, 1).getDay();
+            var grid = $('cal-grid');
+            ['S', 'M', 'T', 'W', 'T', 'F', 'S'].forEach(function (d) { var l = document.createElement('div'); l.className = 'cal-day-label'; l.textContent = d; grid.appendChild(l) });
+            for (var i = 0; i < firstDay; i++) { var e = document.createElement('div'); e.className = 'cal-cell empty'; grid.appendChild(e) }
+            for (var d = 1; d <= daysInMonth; d++) {
+                var cell = document.createElement('div');
+                var val = data[d] || 0;
+                var cls = val === 2 ? 'both' : val === 1 ? 'one' : 'none';
+                cell.className = 'cal-cell ' + cls + (d === today ? ' today' : '');
+                cell.textContent = d;
+                cell.title = 'Sep ' + d + ': ' + (val === 2 ? 'Both meals ✅' : val === 1 ? 'One meal 🟡' : 'Absent ❌');
+                grid.appendChild(cell)
+            }
+        })();
+
+        var customers = [
+            { name: 'Rahul ', lunch: true, dinner: true }, { name: 'Priya Mehta', lunch: true, dinner: false },
+            { name: 'Amit Verma', lunch: true, dinner: true }, { name: 'Sunita Gupta', lunch: false, dinner: true },
+            { name: 'Rajesh Patel', lunch: true, dinner: true }, { name: 'Kavita Singh', lunch: true, dinner: false },
+            { name: 'Deepak Joshi', lunch: false, dinner: false }, { name: 'Anita Yadav', lunch: true, dinner: true },
+            { name: 'Vikram Tiwari', lunch: true, dinner: true }, { name: 'Rekha Agarwal', lunch: true, dinner: false },
+            { name: 'Manish Kumar', lunch: false, dinner: true }, { name: 'Pooja Mishra', lunch: true, dinner: true },
+            { name: 'Sanjay Pandey', lunch: true, dinner: true }, { name: 'Neha Bhandari', lunch: false, dinner: true },
+            { name: 'Arjun Chauhan', lunch: true, dinner: false }
+        ];
+
+        (function buildCustList() {
+            var list = $('customer-list');
+            customers.forEach(function (c) {
+                var row = document.createElement('div'); row.className = 'customer-row';
+                row.innerHTML = '<span class="cust-name">' + c.name + '</span><span class="cust-meals"><span class="meal-pill ' + (c.lunch ? 'yes' : 'no') + '">🌤️ L</span><span class="meal-pill ' + (c.dinner ? 'yes' : 'no') + '">🌙 D</span></span>';
+                list.appendChild(row)
+            })
+        })();
+
+        var feedbacks = [
+            { name: 'Priya Mehta', time: 'Today, 2:14 PM', msg: 'Dal was excellent today! Please add more salad options. 🥗' },
+            { name: 'Amit Verma', time: 'Today, 1:03 PM', msg: 'Dinner was a bit spicy yesterday, otherwise great 👍' },
+            { name: 'Rahul ', time: 'Yesterday, 8:45 PM', msg: 'Best mess in town! Keep it up 🙏' }
+        ];
+
+        (function buildFb() {
+            var fb = $('feedback-list');
+            feedbacks.forEach(function (f) {
+                fb.innerHTML += '<div class="feedback-item"><div class="fb-header"><span class="fb-name">👤 ' + f.name + '</span><span class="fb-time">' + f.time + '</span></div><div class="fb-msg">' + f.msg + '</div></div>'
+            })
+        })();
+
+        var qas = [
+            { q: '🍽️ How many ate lunch today?', a: '32 customers had lunch today out of 42 total.\nThat\'s a 76% lunch turnout.\n⭐ Top attendees: Rahul, Amit, Rajesh, Pooja, Sanjay.' },
+            { q: '🌙 Who skipped dinner this week?', a: 'Skipped dinner this week (Sep 18–24):\n• Priya Mehta (3 days)\n• Kavita Singh (2 days)\n• Rekha Agarwal (4 days)\n• Arjun Chauhan (2 days)\n• Deepak Joshi (all 7 days — on leave)' },
+            { q: '💸 Who hasn\'t paid this month?', a: 'Pending payments for September 2026:\n1. Deepak Joshi — ₹1,800 due\n2. Kavita Singh — ₹900 due\n3. Neha Bhandari — ₹2,200 due\n4. Arjun Chauhan — ₹1,600 due\n📩 Reminders sent to all 4 customers.' },
+            { q: '🌟 Best customers this month', a: 'Top 5 most consistent customers in September:\n🥇 Rahul  — 23/24 days (both meals)\n🥈 Rajesh Patel — 22/24 days\n🥉 Pooja Mishra — 22/24 days\n4️⃣ Vikram Tiwari — 21/24 days\n5️⃣ Anita Yadav — 20/24 days' },
+            { q: '📆 Days attended — full month', a: 'Attendance this month (Sep 1–24):\n• Full days (both meals): 18 days\n• Lunch only: 3 days\n• Dinner only: 1 day\n• Absent: 2 days (Sep 6, 13)\nOverall attendance rate: 91.6% ✅' }
+        ];
+
+        var activeQA = -1;
+
+        (function buildPills() {
+            var wrap = $('pills-wrap');
+            qas.forEach(function (qa, i) {
+                var btn = document.createElement('button'); btn.className = 'pill-btn'; btn.textContent = qa.q;
+                btn.onclick = function () { selectQA(i) }; wrap.appendChild(btn)
+            })
+        })();
+
+        function selectQA(i) {
+            var pills = document.querySelectorAll('.pill-btn');
+            var answer = $('qa-answer');
+            if (activeQA === i) { pills[i].classList.remove('active'); answer.classList.remove('visible'); activeQA = -1; return }
+            pills.forEach(function (p) { p.classList.remove('active') });
+            pills[i].classList.add('active'); answer.textContent = qas[i].a; answer.classList.add('visible'); activeQA = i;
+            setTimeout(function () { answer.scrollIntoView({ behavior: 'smooth', block: 'nearest' }) }, 50)
+        }
+
+        function handleExport() { showToast('📊 Exporting September 2026 data...'); setTimeout(function () { showToast('✅ Export ready! (Demo mode)') }, 1800) }
+
+        function sendMessage() {
+            var nameEl = $('msg-name');
+            var textEl = $('msg-text');
+            var name = nameEl.value.trim();
+            var msg = textEl.value.trim();
+            if (!msg) { showToast('✏️ Please type a message first!'); return }
+            if (!name) { showToast('👤 Please enter your name!'); return }
+            var now = new Date();
+            var time = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+            var box = $('sent-msgs');
+            var item = document.createElement('div');
+            item.className = 'sent-msg-item';
+            item.innerHTML = '<div class="sent-msg-meta">👤 ' + name + ' &nbsp;·&nbsp; ' + time + '</div><div class="sent-msg-body">' + msg.replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</div>';
+            box.insertBefore(item, box.firstChild);
+            textEl.value = '';
+            showToast('✅ Message sent to Swayamsiddha Mess!');
+        }
+    </script>
+</body>
+
+</html>
