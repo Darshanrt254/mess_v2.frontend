@@ -78,7 +78,7 @@ export function CustomerDetailsPage() {
   }
 
   const remainingTiffins = customer.remainingTiffins ?? 0;
-  const isPaymentSuspended = remainingTiffins <= 0;
+  const isPaymentSuspended = Boolean(customer.isPaymentSuspended);
   const isServiceSuspended = customer.serviceStatus === 'SERVICE_SUSPENDED';
 
   const getStatusBadge = () => {

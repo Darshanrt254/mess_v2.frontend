@@ -1,26 +1,26 @@
 import React from 'react';
 import { Card } from '@/components/ui/Card';
 import { AlertTriangle, AlertCircle, Phone, Calendar, ShieldAlert } from 'lucide-react';
-import { SUPPORT_CONTACT } from '@/mock/customer';
+import { SUPPORT_CONTACT } from '@/config/constants';
 
 /**
  * Reusable banner displaying Customer Suspension & Balance Alert states:
  * - ACTIVE
  * - LOW_BALANCE (<= 10 tiffins)
  * - VERY_LOW_BALANCE (<= 5 tiffins)
- * - PAYMENT_SUSPENDED (balance 0)
+ * - PAYMENT_SUSPENDED
  * - SERVICE_SUSPENDED (date range)
  */
 export function SuspensionBanner({
   status = 'ACTIVE',
-  balance = 42,
+  balance,
   startDate,
   endDate,
   contactPhone = SUPPORT_CONTACT,
   className = '',
 }) {
-  // 1. Payment Suspended State (0 tiffins)
-  if (status === 'PAYMENT_SUSPENDED' || balance === 0) {
+  // 1. Payment Suspended State
+  if (status === 'PAYMENT_SUSPENDED') {
     return (
       <div
         className={`p-5 rounded-brand bg-red-50 border-3 border-red-500 shadow-md font-nunito ${className}`}
@@ -71,11 +71,11 @@ export function SuspensionBanner({
             <p className="text-sm font-extrabold text-amber-900 mt-1">
               Your service is suspended from{' '}
               <span className="font-black text-amber-950 underline">
-                {startDate || '01 Oct 2026'}
+                {startDate || '—'}
               </span>{' '}
               to{' '}
               <span className="font-black text-amber-950 underline">
-                {endDate || '08 Oct 2026'}
+                {endDate || '—'}
               </span>
               .
             </p>

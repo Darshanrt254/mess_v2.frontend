@@ -7,6 +7,7 @@ import { Alert } from '@/components/ui/Alert';
 import { LoadingState } from '@/components/ui/LoadingState';
 import { Info } from 'lucide-react';
 import { useCustomerMealsToday, useMarkAttendance } from '@/hooks/useCustomer';
+import { PAYMENT_SUSPENSION_MESSAGE } from '@/config/constants';
 
 export function AttendancePage() {
   const { data: mealsData, isLoading, error } = useCustomerMealsToday();
@@ -23,7 +24,9 @@ export function AttendancePage() {
 
   const lunchState = mealsData?.lunch;
   const dinnerState = mealsData?.dinner;
-  const isSuspended = mealsData?.isPaymentSuspended || mealsData?.isServiceSuspended || mealsData?.remainingTiffins <= 0;
+  const isPaymentSuspended = Boolean(mealsData?.isPaymentSuspended);
+  const isServiceSuspended = Boolean(mealsData?.isServiceSuspended);
+  const isSuspended = isPaymentSuspended || isServiceSuspended;
 
   const handleConfirm = async (mealType, choice) => {
     setActionError(null);
@@ -54,9 +57,13 @@ export function AttendancePage() {
         </Alert>
       )}
 
-      {isSuspended ? (
+      {isPaymentSuspended ? (
+        <Alert variant="danger" title="Payment Pending">
+          {PAYMENT_SUSPENSION_MESSAGE}
+        </Alert>
+      ) : isServiceSuspended ? (
         <Alert variant="warning" title="Account Paused">
-          Your tiffin account is currently suspended or has 0 balance. Daily attendance marking is disabled.
+          Your tiffin service is currently suspended. Daily attendance marking is paused.
         </Alert>
       ) : (
         <Alert variant="info" title="Cutoff Time Policy">

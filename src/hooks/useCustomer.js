@@ -52,6 +52,25 @@ export function useCustomerMessages() {
 }
 
 /**
+ * Hook to fetch customer attendance history for date range
+ */
+export function useCustomerAttendanceHistory(params = {}) {
+  const queryStr = new URLSearchParams(
+    Object.entries(params).filter(([_, v]) => v !== undefined && v !== null && v !== '')
+  ).toString();
+
+  const endpoint = `/customer/attendance/history${queryStr ? `?${queryStr}` : ''}`;
+
+  return useQuery({
+    queryKey: ['customerAttendanceHistory', params],
+    queryFn: async () => {
+      return await api.get(endpoint);
+    },
+    enabled: Boolean(params.from && params.to),
+  });
+}
+
+/**
  * Mutation to mark attendance (Lunch or Dinner)
  */
 export function useMarkAttendance() {
@@ -65,6 +84,7 @@ export function useMarkAttendance() {
       queryClient.invalidateQueries({ queryKey: ['customerMeals'] });
       queryClient.invalidateQueries({ queryKey: ['customerPoll'] });
       queryClient.invalidateQueries({ queryKey: ['customer'] });
+      queryClient.invalidateQueries({ queryKey: ['customerAttendanceHistory'] });
     },
   });
 }
@@ -82,6 +102,7 @@ export function useVotePoll() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['customerPoll'] });
       queryClient.invalidateQueries({ queryKey: ['customerMeals'] });
+      queryClient.invalidateQueries({ queryKey: ['customerAttendanceHistory'] });
     },
   });
 }
@@ -101,3 +122,4 @@ export function useSendCustomerMessage() {
     },
   });
 }
+

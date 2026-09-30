@@ -14,6 +14,7 @@ import { useAuth } from '@/hooks/useAuth';
 import {
   useCustomerProfile,
   useCustomerMealsToday,
+  useCustomerAttendanceHistory,
   useMarkAttendance,
   useVotePoll,
   useSendCustomerMessage,
@@ -24,8 +25,7 @@ import {
   Send,
   CheckCircle,
 } from 'lucide-react';
-
-const SUPPORT_CONTACT = '+91 91655 35902';
+import { SUPPORT_CONTACT } from '@/config/constants';
 
 export function CustomerDashboardPage() {
   const { user } = useAuth();
@@ -33,6 +33,18 @@ export function CustomerDashboardPage() {
   // Real backend queries
   const { data: customerProfile, isLoading: isProfileLoading } = useCustomerProfile();
   const { data: mealsData, isLoading: isMealsLoading, error: mealsError } = useCustomerMealsToday();
+
+  // Derive month range from backend businessDate for calendar history
+  const businessDate = mealsData?.businessDate || '';
+  const dateObj = businessDate ? new Date(`${businessDate}T12:00:00Z`) : new Date();
+  const year = dateObj.getFullYear();
+  const month = dateObj.getMonth() + 1;
+  const monthStr = String(month).padStart(2, '0');
+  const lastDay = new Date(year, month, 0).getDate();
+  const monthFrom = `${year}-${monthStr}-01`;
+  const monthTo = `${year}-${monthStr}-${String(lastDay).padStart(2, '0')}`;
+
+  const { data: historyData } = useCustomerAttendanceHistory({ from: monthFrom, to: monthTo });
 
   // Mutations
   const markAttendanceMutation = useMarkAttendance();
@@ -55,8 +67,8 @@ export function CustomerDashboardPage() {
   // Derive authoritative customer & meal values from backend
   const customerName = customerProfile?.name || user?.name || 'Customer';
   const remainingTiffins = mealsData?.remainingTiffins ?? customerProfile?.remainingTiffins ?? 0;
-  const isPaymentSuspended = mealsData?.isPaymentSuspended || remainingTiffins <= 0;
-  const isServiceSuspended = mealsData?.isServiceSuspended || mealsData?.serviceStatus === 'SERVICE_SUSPENDED';
+  const isPaymentSuspended = Boolean(mealsData?.isPaymentSuspended);
+  const isServiceSuspended = Boolean(mealsData?.isServiceSuspended || mealsData?.serviceStatus === 'SERVICE_SUSPENDED');
   const isSuspended = isPaymentSuspended || isServiceSuspended;
 
   const lunchState = mealsData?.lunch;
@@ -64,7 +76,6 @@ export function CustomerDashboardPage() {
   const pollState = mealsData?.poll;
 
   const dayOfWeek = mealsData?.dayOfWeek || 'TODAY';
-  const businessDate = mealsData?.businessDate || '';
   const dateLabel = businessDate ? `Today: ${dayOfWeek}, ${businessDate}` : `Today: ${dayOfWeek}`;
 
   // Attendance handlers
@@ -106,24 +117,43 @@ export function CustomerDashboardPage() {
   const activeToken = lunchState?.mealToken
     ? {
         ...lunchState.mealToken,
-        tokenId: lunchState.mealToken.tokenString || lunchState.mealToken.id,
+        tokenId: lunchState.mealToken.tokenString || lunchState.mealToken.tokenNumber || lunchState.mealToken.id,
         tokenDisplayNumber: lunchState.mealToken.counterNumber ? `#${lunchState.mealToken.counterNumber}` : undefined,
         targetLocation: lunchState.location === 'COLLEGE' ? 'Campus Delivery' : 'Swayamsiddha Restaurant',
       }
     : null;
 
-  // Calendar day calculation based on today's real attendance
-  const todayCalendarState =
-    lunchState?.status === 'PRESENT' && dinnerState?.status === 'PRESENT'
-      ? 'FAINT'
-      : (lunchState?.status === 'PRESENT' && dinnerState?.status === 'ABSENT') ||
-        (lunchState?.status === 'ABSENT' && dinnerState?.status === 'PRESENT')
-      ? 'LIGHT'
-      : lunchState?.status === 'ABSENT' && dinnerState?.status === 'ABSENT'
-      ? 'DARK'
-      : 'TODAY';
-
   const todayDayNumber = businessDate ? parseInt(businessDate.split('-')[2], 10) : new Date().getDate();
+
+  const calendarDays =
+    historyData?.days?.map((d) => {
+      const isToday = d.date === businessDate;
+      const dayLunch = isToday && lunchState ? lunchState.status : d.lunch?.status;
+      const dayDinner = isToday && dinnerState ? dinnerState.status : d.dinner?.status;
+      const dayNum = parseInt(d.date.split('-')[2], 10);
+
+      return {
+        date: d.date,
+        day: dayNum,
+        dayOfWeek: d.dayOfWeek,
+        lunch: dayLunch,
+        dinner: dayDinner,
+        lunchLocation: d.lunch?.location,
+        dinnerLocation: d.dinner?.location,
+        lunchToken: d.lunch?.mealToken,
+        dinnerToken: d.dinner?.mealToken,
+        dinnerServiceAvailable: d.dinner?.serviceAvailable,
+        isToday,
+      };
+    }) || [
+      {
+        date: businessDate,
+        day: todayDayNumber,
+        lunch: lunchState?.status || 'UNMARKED',
+        dinner: dinnerState?.status || 'UNMARKED',
+        isToday: true,
+      },
+    ];
 
   return (
     <div className="space-y-6">
@@ -325,16 +355,8 @@ export function CustomerDashboardPage() {
 
       {/* 6. Attendance Calendar Preview */}
       <AttendanceCalendarPreview
-        monthName="Current Month"
-        days={[
-          {
-            day: todayDayNumber,
-            lunch: lunchState?.status || 'UNMARKED',
-            dinner: dinnerState?.status || 'UNMARKED',
-            isToday: true,
-            state: todayCalendarState,
-          },
-        ]}
+        monthName={businessDate ? new Date(`${businessDate}T12:00:00Z`).toLocaleString('en-IN', { month: 'long', year: 'numeric' }) : 'Current Month'}
+        days={calendarDays}
       />
 
       {/* 7. Message Restaurant Card */}

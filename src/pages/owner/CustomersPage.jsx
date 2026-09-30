@@ -38,16 +38,16 @@ export function CustomersPage() {
 
     if (!matchesSearch) return false;
     if (statusFilter === 'ALL') return true;
-    if (statusFilter === 'ACTIVE') return c.serviceStatus === 'ACTIVE' && c.remainingTiffins > 5;
-    if (statusFilter === 'LOW_BALANCE') return c.remainingTiffins > 0 && c.remainingTiffins <= 10;
-    if (statusFilter === 'VERY_LOW_BALANCE') return c.remainingTiffins > 0 && c.remainingTiffins <= 5;
-    if (statusFilter === 'PAYMENT_SUSPENDED') return c.remainingTiffins <= 0;
+    if (statusFilter === 'ACTIVE') return c.serviceStatus === 'ACTIVE' && !c.isPaymentSuspended && c.remainingTiffins > 5;
+    if (statusFilter === 'LOW_BALANCE') return !c.isPaymentSuspended && c.remainingTiffins > 5 && c.remainingTiffins <= 10;
+    if (statusFilter === 'VERY_LOW_BALANCE') return !c.isPaymentSuspended && c.remainingTiffins > 0 && c.remainingTiffins <= 5;
+    if (statusFilter === 'PAYMENT_SUSPENDED') return Boolean(c.isPaymentSuspended);
     if (statusFilter === 'SERVICE_SUSPENDED') return c.serviceStatus === 'SERVICE_SUSPENDED';
     return true;
   });
 
   const getStatusBadge = (cust) => {
-    if (cust.remainingTiffins <= 0) {
+    if (cust.isPaymentSuspended) {
       return <Badge variant="danger" size="sm">Payment Pending (0)</Badge>;
     }
     if (cust.serviceStatus === 'SERVICE_SUSPENDED') {
@@ -193,7 +193,7 @@ export function CustomersPage() {
                       {cust.user?.loginIdentifier || cust.phone}
                     </td>
                     <td className="py-3.5 px-3 text-center">
-                      <span className={`text-base font-black ${cust.remainingTiffins <= 0 ? 'text-red-600' : cust.remainingTiffins <= 5 ? 'text-rose-600' : 'text-brand-darkGreen'}`}>
+                      <span className={`text-base font-black ${cust.isPaymentSuspended ? 'text-red-600' : cust.remainingTiffins <= 5 ? 'text-rose-600' : 'text-brand-darkGreen'}`}>
                         {cust.remainingTiffins}
                       </span>
                     </td>

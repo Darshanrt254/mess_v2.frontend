@@ -1,91 +1,53 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card } from '@/components/ui/Card';
-import { Calendar as CalendarIcon } from 'lucide-react';
+import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, X, Ticket, Utensils } from 'lucide-react';
+import { Badge } from '@/components/ui/Badge';
 import { CALENDAR_STATES } from '@/styles/tokens';
 import { cn } from '@/utils/cn';
+import { computeDayAttendanceState } from '@/utils/calendarRules';
 
-/**
- * Computes a day's visual attendance state based on COMBINED Lunch + Dinner attendance.
- * 
- * Mapping:
- * - Lunch PRESENT + Dinner PRESENT -> FAINT (Lightest attendance color)
- * - Lunch PRESENT + Dinner ABSENT  -> LIGHT (One present)
- * - Lunch ABSENT  + Dinner PRESENT -> LIGHT (One present)
- * - Lunch ABSENT  + Dinner ABSENT  -> DARK  (Both absent)
- * - Today (while unresolved/pending) -> TODAY (Dedicated light blue)
- * - Historical unmarked -> NEUTRAL
- */
-export function computeDayAttendanceState(lunch, dinner, isToday = false) {
-  if (isToday) {
-    // If today's dinner or final attendance is unresolved, today MUST use dedicated light blue
-    if (dinner === 'PENDING' || lunch === 'PENDING' || !dinner || !lunch) {
-      return 'TODAY';
-    }
-  }
-
-  if (lunch === 'PRESENT' && dinner === 'PRESENT') {
-    return 'FAINT';
-  }
-  if (
-    (lunch === 'PRESENT' && dinner === 'ABSENT') ||
-    (lunch === 'ABSENT' && dinner === 'PRESENT')
-  ) {
-    return 'LIGHT';
-  }
-  if (lunch === 'ABSENT' && dinner === 'ABSENT') {
-    return 'DARK';
-  }
-
-  return isToday ? 'TODAY' : 'NEUTRAL';
-}
+export { computeDayAttendanceState };
 
 export function AttendanceCalendarPreview({
   monthName = 'September 2026',
   days = [],
+  onPrevMonth,
+  onNextMonth,
   action,
   className = '',
 }) {
   const weekDays = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+  const [selectedDay, setSelectedDay] = useState(null);
 
-  // Default sample preview days demonstrating the exact combined states:
-  // Day 1-29: historical combinations.
-  // Day 30: Today (pending final dinner attendance -> light blue override).
-  const defaultDays = days.length > 0 ? days : [
-    { day: 1, lunch: 'PRESENT', dinner: 'PRESENT' }, // FAINT
-    { day: 2, lunch: 'PRESENT', dinner: 'PRESENT' }, // FAINT
-    { day: 3, lunch: 'PRESENT', dinner: 'ABSENT' },  // LIGHT
-    { day: 4, lunch: 'ABSENT',  dinner: 'ABSENT' },  // DARK
-    { day: 5, lunch: 'PRESENT', dinner: 'PRESENT' }, // FAINT
-    { day: 6, lunch: 'PRESENT', dinner: 'PRESENT' }, // FAINT
-    { day: 7, lunch: 'ABSENT',  dinner: 'ABSENT' },  // DARK
-    { day: 8, lunch: 'PRESENT', dinner: 'PRESENT' }, // FAINT
-    { day: 9, lunch: 'ABSENT',  dinner: 'PRESENT' },  // LIGHT
-    { day: 10, lunch: 'PRESENT', dinner: 'PRESENT' }, // FAINT
-    { day: 11, lunch: 'PRESENT', dinner: 'PRESENT' }, // FAINT
-    { day: 12, lunch: 'ABSENT',  dinner: 'ABSENT' },  // DARK
-    { day: 13, lunch: 'ABSENT',  dinner: 'ABSENT' },  // DARK
-    { day: 14, lunch: 'PRESENT', dinner: 'PRESENT' }, // FAINT
-    { day: 15, lunch: 'PRESENT', dinner: 'ABSENT' },  // LIGHT
-    { day: 16, lunch: 'PRESENT', dinner: 'PRESENT' }, // FAINT
-    { day: 17, lunch: 'PRESENT', dinner: 'PRESENT' }, // FAINT
-    { day: 18, lunch: 'PRESENT', dinner: 'PRESENT' }, // FAINT
-    { day: 19, lunch: 'ABSENT',  dinner: 'ABSENT' },  // DARK
-    { day: 20, lunch: 'ABSENT',  dinner: 'PRESENT' },  // LIGHT
-    { day: 21, lunch: 'PRESENT', dinner: 'PRESENT' }, // FAINT
-    { day: 22, lunch: 'PRESENT', dinner: 'PRESENT' }, // FAINT
-    { day: 23, lunch: 'PRESENT', dinner: 'PRESENT' }, // FAINT
-    { day: 24, lunch: 'PRESENT', dinner: 'PRESENT' }, // FAINT
-    { day: 25, lunch: 'ABSENT',  dinner: 'ABSENT' },  // DARK
-    { day: 26, lunch: 'PRESENT', dinner: 'PRESENT' }, // FAINT
-    { day: 27, lunch: 'PRESENT', dinner: 'ABSENT' },  // LIGHT
-    { day: 28, lunch: 'PRESENT', dinner: 'PRESENT' }, // FAINT
-    { day: 29, lunch: 'PRESENT', dinner: 'PRESENT' }, // FAINT
-    { day: 30, lunch: 'PRESENT', dinner: 'PENDING', isToday: true }, // TODAY (Light Blue)
-  ];
+  // Compute leading padding slots based on the first day's weekday
+  // Monday = 0, Tuesday = 1, ..., Sunday = 6
+  let leadingPadding = 0;
+  if (days.length > 0 && days[0].date) {
+    const firstDate = new Date(`${days[0].date}T12:00:00Z`);
+    // JavaScript getUTCDay: 0 = Sun, 1 = Mon, ..., 6 = Sat
+    const jsDay = firstDate.getUTCDay();
+    leadingPadding = jsDay === 0 ? 6 : jsDay - 1;
+  }
 
   const resolveDayState = (item) => {
     if (item.state) return item.state;
-    return computeDayAttendanceState(item.lunch, item.dinner, item.isToday);
+    const isSunday = item.dayOfWeek === 'SUNDAY';
+    return computeDayAttendanceState(item.lunch, item.dinner, item.isToday, isSunday);
+  };
+
+  const formatStatus = (status) => {
+    if (!status || status === 'UNMARKED') return 'Unmarked';
+    if (status === 'PRESENT') return 'Present';
+    if (status === 'ABSENT') return 'Absent';
+    if (status === 'NOT_AVAILABLE') return 'No Service';
+    return status;
+  };
+
+  const formatLocation = (loc) => {
+    if (!loc) return '—';
+    if (loc === 'COLLEGE') return 'College';
+    if (loc === 'RESTAURANT') return 'Restaurant';
+    return loc;
   };
 
   return (
@@ -93,7 +55,31 @@ export function AttendanceCalendarPreview({
       title="Attendance Calendar"
       subtitle={monthName}
       icon={<CalendarIcon className="w-5 h-5 text-brand-orange" />}
-      action={action}
+      action={
+        <div className="flex items-center gap-2">
+          {onPrevMonth && (
+            <button
+              type="button"
+              onClick={onPrevMonth}
+              className="p-1 rounded hover:bg-brand-orange/20 text-brand-darkGreen transition-colors"
+              aria-label="Previous Month"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+          )}
+          {onNextMonth && (
+            <button
+              type="button"
+              onClick={onNextMonth}
+              className="p-1 rounded hover:bg-brand-orange/20 text-brand-darkGreen transition-colors"
+              aria-label="Next Month"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          )}
+          {action}
+        </div>
+      }
       className={className}
     >
       {/* Day Headers */}
@@ -107,30 +93,121 @@ export function AttendanceCalendarPreview({
 
       {/* Days Grid */}
       <div className="grid grid-cols-7 gap-1.5">
-        {defaultDays.map((item, idx) => {
+        {/* Leading empty padding slots */}
+        {Array.from({ length: leadingPadding }).map((_, pIdx) => (
+          <div key={`pad-${pIdx}`} className="aspect-square" aria-hidden="true" />
+        ))}
+
+        {days.map((item, idx) => {
           const stateKey = resolveDayState(item);
           const stateConfig = CALENDAR_STATES[stateKey] || CALENDAR_STATES.NEUTRAL;
+          const isSelected = selectedDay && selectedDay.date === item.date;
 
           return (
-            <div
-              key={idx}
+            <button
+              type="button"
+              key={item.date || idx}
+              onClick={() => setSelectedDay(item)}
               className={cn(
-                'aspect-square flex items-center justify-center rounded-brand-sm text-xs font-black border transition-transform hover:scale-110 cursor-default select-none',
-                stateConfig.classNames
+                'aspect-square flex items-center justify-center rounded-brand-sm text-xs font-black border transition-all cursor-pointer select-none',
+                stateConfig.classNames,
+                isSelected && 'ring-3 ring-brand-orange ring-offset-1 scale-105 z-10'
               )}
-              title={`Day ${item.day}: ${stateConfig.label}`}
+              title={`Day ${item.day}: ${stateConfig.label} (Click for details)`}
             >
               {item.day}
-            </div>
+            </button>
           );
         })}
       </div>
+
+      {/* Day Details Card (shown when clicking a day) */}
+      {selectedDay && (
+        <div className="mt-4 p-4 rounded-brand-sm bg-brand-creamLight border-2 border-brand-orange font-nunito animate-in fade-in duration-200">
+          <div className="flex items-center justify-between border-b border-brand-orange/30 pb-2 mb-3">
+            <div className="flex items-center gap-2">
+              <CalendarIcon className="w-4 h-4 text-brand-orange" />
+              <span className="text-sm font-black text-brand-darkGreen">
+                Details for {selectedDay.date} ({selectedDay.dayOfWeek || 'DAY'})
+              </span>
+              {selectedDay.isToday && (
+                <Badge variant="brand" size="sm">Today</Badge>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={() => setSelectedDay(null)}
+              className="text-brand-darkGreen/60 hover:text-brand-darkGreen p-1"
+              aria-label="Close details"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+            {/* Lunch Details */}
+            <div className="p-3 bg-white/70 rounded-brand-sm border border-brand-orange/20">
+              <span className="font-black text-brand-darkGreen block uppercase tracking-wide text-[10px] mb-1">
+                Lunch
+              </span>
+              <div className="space-y-1 text-brand-darkGreen font-bold">
+                <div>
+                  Status: <span className="font-black">{formatStatus(selectedDay.lunch)}</span>
+                </div>
+                <div>
+                  Location: <span className="font-black">{formatLocation(selectedDay.lunchLocation)}</span>
+                </div>
+                <div>
+                  Token:{' '}
+                  <span className="font-mono font-black">
+                    {selectedDay.lunchToken?.tokenString ||
+                      selectedDay.lunchToken?.tokenNumber ||
+                      selectedDay.lunchToken?.id ||
+                      '—'}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Dinner Details */}
+            <div className="p-3 bg-white/70 rounded-brand-sm border border-brand-orange/20">
+              <span className="font-black text-brand-darkGreen block uppercase tracking-wide text-[10px] mb-1">
+                Dinner
+              </span>
+              <div className="space-y-1 text-brand-darkGreen font-bold">
+                {selectedDay.dayOfWeek === 'SUNDAY' || selectedDay.dinnerServiceAvailable === false ? (
+                  <div className="text-brand-orange font-black">No Service (Sunday)</div>
+                ) : (
+                  <>
+                    <div>
+                      Status: <span className="font-black">{formatStatus(selectedDay.dinner)}</span>
+                    </div>
+                    <div>
+                      Location: <span className="font-black">{formatLocation(selectedDay.dinnerLocation || 'RESTAURANT')}</span>
+                    </div>
+                    <div>
+                      Token:{' '}
+                      <span className="font-mono font-black">
+                        {selectedDay.dinnerToken?.tokenString ||
+                          selectedDay.dinnerToken?.tokenNumber ||
+                          selectedDay.dinnerToken?.id ||
+                          '—'}
+                      </span>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Legend with REQUIRED exact color mapping:
           [dark]   Both Absent
           [light]  One Present
           [faint]  Both Present
           [blue]   Today (Pending)
+          [neutral] Unmarked
       */}
       <div className="flex flex-wrap items-center justify-center gap-3.5 pt-4 mt-4 border-t border-brand-orange/20 text-[11px] font-bold text-brand-green">
         {/* 1. DARK: Both Absent */}
@@ -167,6 +244,15 @@ export function AttendanceCalendarPreview({
             aria-hidden="true"
           />
           <span>Today (Pending)</span>
+        </div>
+
+        {/* 5. NEUTRAL: Unmarked */}
+        <div className="flex items-center gap-1.5">
+          <span
+            className={cn('w-3.5 h-3.5 rounded-sm inline-block shrink-0', CALENDAR_STATES.NEUTRAL.dotClass)}
+            aria-hidden="true"
+          />
+          <span>Unmarked</span>
         </div>
       </div>
     </Card>

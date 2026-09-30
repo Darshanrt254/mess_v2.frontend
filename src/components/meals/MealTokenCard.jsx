@@ -58,22 +58,22 @@ export function MealTokenCard({
           <div className="flex items-center gap-3">
             <div className="p-2.5 bg-brand-yellow rounded-brand-sm border-2 border-brand-orange text-brand-darkGreen font-black text-center min-w-[64px]">
               <span className="text-xs block text-brand-green uppercase tracking-wider font-extrabold leading-tight">Token</span>
-              <span className="text-lg font-black block leading-none">{token.tokenDisplayNumber || '#42'}</span>
+              <span className="text-lg font-black block leading-none">{token.tokenDisplayNumber || (token.counterNumber ? `#${token.counterNumber}` : '—')}</span>
             </div>
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-sm font-black text-brand-darkGreen">
-                  {token.mealType || 'Lunch'} Token
+                  {token.mealType || 'Meal'} Token
                 </span>
                 <Badge variant={token.status === 'ACTIVE' ? 'success' : 'neutral'} size="sm">
                   {token.status || 'Active'}
                 </Badge>
               </div>
               <p className="text-xs font-bold text-brand-green mt-0.5">
-                ID: <span className="font-mono font-black text-brand-darkGreen">{token.tokenId || '27-09-01-C-001'}</span>
+                ID: <span className="font-mono font-black text-brand-darkGreen">{token.tokenId || token.tokenString || token.tokenNumber || '—'}</span>
               </p>
               <p className="text-xs font-bold text-brand-darkGreen/80 mt-0.5">
-                Target: {token.targetLocation || 'Campus Delivery'}
+                Target: {token.targetLocation || token.location || '—'}
               </p>
             </div>
           </div>
