@@ -15,7 +15,7 @@ export function Sidebar({
       {/* Mobile Backdrop */}
       {isOpen && (
         <div
-          className="fixed inset-0 z-40 bg-brand-darkGreen/60 backdrop-blur-xs md:hidden"
+          className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm md:hidden"
           onClick={onClose}
         />
       )}
@@ -23,7 +23,7 @@ export function Sidebar({
       {/* Sidebar Container */}
       <aside
         className={cn(
-          'fixed inset-y-0 left-0 z-45 w-64 bg-brand-card border-r-3 border-brand-orange flex flex-col transition-transform duration-200 ease-in-out md:static md:translate-x-0 font-nunito shadow-brand',
+          'fixed inset-y-0 left-0 z-50 w-64 bg-brand-card border-r-3 border-brand-orange flex flex-col transition-transform duration-200 ease-in-out md:static md:translate-x-0 font-nunito shadow-brand',
           isOpen ? 'translate-x-0' : '-translate-x-full',
           className
         )}

@@ -113,13 +113,14 @@ export function CustomerDashboardPage() {
     }
   };
 
-  // Format token if available
-  const activeToken = lunchState?.mealToken
+  // Format token if available (lunch or dinner)
+  const tokenSource = lunchState?.mealToken || dinnerState?.mealToken;
+  const activeToken = tokenSource
     ? {
-        ...lunchState.mealToken,
-        tokenId: lunchState.mealToken.tokenString || lunchState.mealToken.tokenNumber || lunchState.mealToken.id,
-        tokenDisplayNumber: lunchState.mealToken.counterNumber ? `#${lunchState.mealToken.counterNumber}` : undefined,
-        targetLocation: lunchState.location === 'COLLEGE' ? 'Campus Delivery' : 'Swayamsiddha Restaurant',
+        ...tokenSource,
+        tokenId: tokenSource.tokenString || tokenSource.tokenNumber || tokenSource.id,
+        tokenDisplayNumber: tokenSource.counterNumber ? `#${tokenSource.counterNumber}` : undefined,
+        targetLocation: (lunchState?.mealToken ? lunchState.location : dinnerState?.location) === 'COLLEGE' ? 'Campus Delivery' : 'Swayamsiddha Restaurant',
       }
     : null;
 
@@ -337,8 +338,12 @@ export function CustomerDashboardPage() {
           {pollState?.pollExists && lunchState?.status !== 'ABSENT' && (
             <LunchPollCard
               isAttendanceAbsent={lunchState?.status === 'ABSENT'}
-              currentLocation={pollState.existingVote || lunchState?.location}
-              isVoteLocked={pollState.locked || Boolean(pollState.existingVote)}
+              pollStatus={pollState.status}
+              existingVote={pollState.existingVote}
+              eligible={pollState.eligible}
+              reason={pollState.reason}
+              isVoteLocked={Boolean(pollState.existingVote)}
+              currentLocation={pollState.existingVote}
               onConfirmVote={handleConfirmPollVote}
             />
           )}
@@ -346,8 +351,8 @@ export function CustomerDashboardPage() {
           {/* 5. Today's Tokens */}
           <MealTokenCard
             token={activeToken}
-            isAttendanceAbsent={lunchState?.status === 'ABSENT'}
-            isAttendanceUnmarked={lunchState?.status === 'UNMARKED'}
+            isAttendanceAbsent={lunchState?.status === 'ABSENT' && (!dinnerState?.serviceAvailable || dinnerState?.status === 'ABSENT')}
+            isAttendanceUnmarked={lunchState?.status === 'UNMARKED' && (!dinnerState?.serviceAvailable || dinnerState?.status === 'UNMARKED')}
             isSuspended={isSuspended}
           />
         </>

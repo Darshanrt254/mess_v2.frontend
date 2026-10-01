@@ -81,7 +81,16 @@ export function MealTokenCard({
             View QR Code
           </Button>
         </div>
-      ) : null}
+      ) : (
+        <div className="p-4 rounded-brand-sm bg-brand-yellow/15 border-2 border-dashed border-brand-orange/40 text-center font-nunito">
+          <span className="text-sm font-black text-brand-darkGreen block">
+            Token Generation Pending
+          </span>
+          <span className="text-xs font-bold text-brand-green block mt-0.5">
+            Your attendance is recorded. Digital tokens are issued upon daily finalization or meal collection.
+          </span>
+        </div>
+      )}
     </Card>
   );
 }

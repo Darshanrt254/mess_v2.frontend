@@ -8,7 +8,7 @@ export function Topbar({ onToggleSidebar, role = 'OWNER' }) {
   const { user, logout } = useAuth();
 
   return (
-    <header className="sticky top-0 z-40 bg-brand-darkGreen text-brand-cream border-b-3 border-brand-orange shadow-md">
+    <header className="sticky top-0 z-30 bg-brand-darkGreen text-brand-cream border-b-3 border-brand-orange shadow-md">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
         {/* Left: Mobile hamburger & Brand */}
         <div className="flex items-center gap-3">
