@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -69,37 +70,70 @@ export function MessagesPage() {
         </Card>
       ) : (
         <div className="space-y-3 font-nunito">
-          {messages.map((msg) => (
-            <Card key={msg.id} className="transition-all hover:border-brand-darkGreen">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-2 pb-2 border-b border-brand-orange/20">
-                <div className="flex items-center gap-2.5">
-                  <Avatar name={msg.customerProfile?.name || 'Customer'} size="sm" />
-                  <div>
-                    <span className="text-sm font-black text-brand-darkGreen block leading-tight">
-                      {msg.customerProfile?.name || 'Customer'}
+          {messages.map((msg) => {
+            const customer = msg.customer || msg.customerProfile;
+            const customerId = msg.customerId || customer?.id;
+            const customerName = customer?.name || 'Customer';
+            const customerPhone = customer?.phone || customer?.user?.loginIdentifier || '';
+            const messageText = msg.message || msg.content || '';
+
+            return (
+              <Card key={msg.id} className="transition-all hover:border-brand-darkGreen">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-2 pb-2 border-b border-brand-orange/20">
+                  {customerId ? (
+                    <Link
+                      to={`/owner/customers/${customerId}`}
+                      className="flex items-center gap-2.5 group hover:opacity-90 transition-opacity cursor-pointer"
+                      title={`Open ${customerName}'s profile`}
+                    >
+                      <Avatar
+                        name={customerName}
+                        src={customer?.profilePictureUrl}
+                        size="sm"
+                        className="group-hover:ring-2 group-hover:ring-brand-orange transition-all"
+                      />
+                      <div>
+                        <span className="text-sm font-black text-brand-darkGreen block leading-tight group-hover:text-brand-orange transition-colors">
+                          {customerName}
+                        </span>
+                        <span className="text-xs font-bold text-brand-green group-hover:underline">
+                          {customerPhone || 'View Profile'}
+                        </span>
+                      </div>
+                    </Link>
+                  ) : (
+                    <div className="flex items-center gap-2.5">
+                      <Avatar name={customerName} size="sm" />
+                      <div>
+                        <span className="text-sm font-black text-brand-darkGreen block leading-tight">
+                          {customerName}
+                        </span>
+                        <span className="text-xs font-bold text-brand-green">
+                          {customerPhone}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-brand-green flex items-center gap-1">
+                      <Clock className="w-3.5 h-3.5" />
+                      {new Date(msg.createdAt).toLocaleString('en-IN', {
+                        day: '2-digit',
+                        month: 'short',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
                     </span>
-                    <span className="text-xs font-bold text-brand-green">
-                      {msg.customerProfile?.phone || ''}
-                    </span>
+                    {getStatusBadge(msg.status)}
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-brand-green flex items-center gap-1">
-                    <Clock className="w-3.5 h-3.5" />
-                    {new Date(msg.createdAt).toLocaleString('en-IN', {
-                      day: '2-digit',
-                      month: 'short',
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
-                  </span>
-                  {getStatusBadge(msg.status)}
-                </div>
-              </div>
 
-              <p className="text-sm font-bold text-brand-darkGreen/90 py-1">
-                &quot;{msg.content}&quot;
-              </p>
+                <div className="py-2 px-3 my-1 bg-brand-creamLight/60 rounded-brand-sm border border-brand-orange/20">
+                  <p className="text-sm font-bold text-brand-darkGreen leading-relaxed whitespace-pre-wrap">
+                    &ldquo;{messageText}&rdquo;
+                  </p>
+                </div>
 
               <div className="flex justify-end gap-2 mt-3">
                 {msg.status === 'UNREAD' && (
@@ -126,7 +160,8 @@ export function MessagesPage() {
                 )}
               </div>
             </Card>
-          ))}
+          );
+        })}
         </div>
       )}
     </div>

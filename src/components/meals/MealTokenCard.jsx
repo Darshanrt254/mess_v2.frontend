@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -58,7 +59,7 @@ export function MealTokenCard({
           <div className="flex items-center gap-3">
             <div className="p-2.5 bg-brand-yellow rounded-brand-sm border-2 border-brand-orange text-brand-darkGreen font-black text-center min-w-[64px]">
               <span className="text-xs block text-brand-green uppercase tracking-wider font-extrabold leading-tight">Token</span>
-              <span className="text-lg font-black block leading-none">{token.tokenDisplayNumber || (token.counterNumber ? `#${token.counterNumber}` : '—')}</span>
+              <span className="text-lg font-black block leading-none">{token.tokenDisplayNumber || ((token.serialNumber !== undefined || token.counterNumber !== undefined) ? `#${token.serialNumber ?? token.counterNumber}` : '—')}</span>
             </div>
             <div>
               <div className="flex items-center gap-2">
@@ -70,16 +71,18 @@ export function MealTokenCard({
                 </Badge>
               </div>
               <p className="text-xs font-bold text-brand-green mt-0.5">
-                ID: <span className="font-mono font-black text-brand-darkGreen">{token.tokenId || token.tokenString || token.tokenNumber || '—'}</span>
+                ID: <span className="font-mono font-black text-brand-darkGreen">{token.token || token.tokenId || token.tokenString || token.tokenNumber || '—'}</span>
               </p>
               <p className="text-xs font-bold text-brand-darkGreen/80 mt-0.5">
                 Target: {token.targetLocation || token.location || '—'}
               </p>
             </div>
           </div>
-          <Button variant="outline" size="sm" leftIcon={<QrCode className="w-4 h-4" />}>
-            View QR Code
-          </Button>
+          <Link to="/customer/tokens">
+            <Button variant="outline" size="sm" leftIcon={<QrCode className="w-4 h-4" />}>
+              View QR Code
+            </Button>
+          </Link>
         </div>
       ) : (
         <div className="p-4 rounded-brand-sm bg-brand-yellow/15 border-2 border-dashed border-brand-orange/40 text-center font-nunito">

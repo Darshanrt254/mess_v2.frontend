@@ -118,8 +118,10 @@ export function CustomerDashboardPage() {
   const activeToken = tokenSource
     ? {
         ...tokenSource,
-        tokenId: tokenSource.tokenString || tokenSource.tokenNumber || tokenSource.id,
-        tokenDisplayNumber: tokenSource.counterNumber ? `#${tokenSource.counterNumber}` : undefined,
+        tokenId: tokenSource.token || tokenSource.tokenString || tokenSource.tokenNumber || tokenSource.tokenId || tokenSource.id,
+        tokenDisplayNumber: (tokenSource.serialNumber !== undefined || tokenSource.counterNumber !== undefined)
+          ? `#${tokenSource.serialNumber ?? tokenSource.counterNumber}`
+          : undefined,
         targetLocation: (lunchState?.mealToken ? lunchState.location : dinnerState?.location) === 'COLLEGE' ? 'Campus Delivery' : 'Swayamsiddha Restaurant',
       }
     : null;

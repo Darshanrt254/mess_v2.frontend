@@ -23,7 +23,7 @@ export function Sidebar({
       {/* Sidebar Container */}
       <aside
         className={cn(
-          'fixed inset-y-0 left-0 z-50 w-64 bg-brand-card border-r-3 border-brand-orange flex flex-col transition-transform duration-200 ease-in-out md:static md:translate-x-0 font-nunito shadow-brand',
+          'fixed inset-y-0 left-0 z-50 w-64 bg-brand-card border-r-3 border-brand-orange flex flex-col transition-transform duration-200 ease-in-out md:sticky md:top-16 md:h-[calc(100vh-4rem)] md:shrink-0 md:translate-x-0 font-nunito shadow-brand',
           isOpen ? 'translate-x-0' : '-translate-x-full',
           className
         )}

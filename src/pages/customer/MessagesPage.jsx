@@ -133,9 +133,11 @@ export function MessagesPage() {
                     {getStatusBadge(msg.status)}
                   </div>
                 </div>
-                <p className="text-xs font-bold text-brand-darkGreen/90">
-                  {msg.content}
-                </p>
+                <div className="mt-2 py-2 px-3 bg-white/70 rounded-brand-sm border border-brand-orange/20">
+                  <p className="text-xs font-bold text-brand-darkGreen leading-relaxed whitespace-pre-wrap">
+                    &ldquo;{msg.message || msg.content || ''}&rdquo;
+                  </p>
+                </div>
               </div>
             ))}
           </div>

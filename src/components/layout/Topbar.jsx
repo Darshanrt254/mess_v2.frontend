@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { Menu, LogOut, Utensils } from 'lucide-react';
 import { Badge } from '@/components/ui/Badge';
 import { Avatar } from '@/components/ui/Avatar';
@@ -6,6 +7,7 @@ import { useAuth } from '@/hooks/useAuth';
 
 export function Topbar({ onToggleSidebar, role = 'OWNER' }) {
   const { user, logout } = useAuth();
+  const dashboardHref = role === 'OWNER' ? '/owner/dashboard' : '/customer/dashboard';
 
   return (
     <header className="sticky top-0 z-30 bg-brand-darkGreen text-brand-cream border-b-3 border-brand-orange shadow-md">
@@ -22,19 +24,23 @@ export function Topbar({ onToggleSidebar, role = 'OWNER' }) {
             </button>
           )}
 
-          <div className="flex items-center gap-2 select-none">
-            <div className="w-9 h-9 rounded-brand-sm bg-brand-yellow flex items-center justify-center border-2 border-brand-orange text-brand-darkGreen shadow-sm">
+          <Link
+            to={dashboardHref}
+            className="flex items-center gap-2 select-none group cursor-pointer"
+            title="Go to Dashboard"
+          >
+            <div className="w-9 h-9 rounded-brand-sm bg-brand-yellow flex items-center justify-center border-2 border-brand-orange text-brand-darkGreen shadow-sm group-hover:scale-105 transition-transform">
               <Utensils className="w-5 h-5 font-black" />
             </div>
             <div>
-              <span className="text-base sm:text-lg font-black tracking-tight text-brand-yellow block leading-none">
+              <span className="text-base sm:text-lg font-black tracking-tight text-brand-yellow block leading-none group-hover:text-amber-300 transition-colors">
                 SWAYAMSIDDHA
               </span>
               <span className="text-[10px] font-extrabold tracking-widest text-brand-greenPale block uppercase">
                 Tiffin Management
               </span>
             </div>
-          </div>
+          </Link>
         </div>
 
         {/* Right: Role badge, User info, Logout */}

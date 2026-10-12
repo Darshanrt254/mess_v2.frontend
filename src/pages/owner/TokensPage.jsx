@@ -19,16 +19,16 @@ export function TokensPage() {
   const { data: todayDinnerAttendance = [] } = useOwnerAttendance({ mealType: 'DINNER' });
 
   const allTokens = [
-    ...todayLunchAttendance.filter((r) => r.mealToken !== null).map((r) => ({
-      tokenString: r.mealToken?.tokenString,
-      counterNumber: r.mealToken?.counterNumber,
+    ...todayLunchAttendance.filter((r) => Boolean(r.mealToken)).map((r) => ({
+      tokenString: r.mealToken?.token || r.mealToken?.tokenString,
+      counterNumber: r.mealToken?.serialNumber ?? r.mealToken?.counterNumber,
       customerName: r.customer?.name,
       mealType: 'LUNCH',
       location: r.location,
     })),
-    ...todayDinnerAttendance.filter((r) => r.mealToken !== null).map((r) => ({
-      tokenString: r.mealToken?.tokenString,
-      counterNumber: r.mealToken?.counterNumber,
+    ...todayDinnerAttendance.filter((r) => Boolean(r.mealToken)).map((r) => ({
+      tokenString: r.mealToken?.token || r.mealToken?.tokenString,
+      counterNumber: r.mealToken?.serialNumber ?? r.mealToken?.counterNumber,
       customerName: r.customer?.name,
       mealType: 'DINNER',
       location: r.location,
@@ -37,11 +37,12 @@ export function TokensPage() {
 
   const handleValidate = (e) => {
     e?.preventDefault();
-    if (!tokenInput.trim()) return;
+    const query = tokenInput.trim();
+    if (!query) return;
 
     const found = allTokens.find(
-      (t) => t.tokenString === tokenInput.trim() ||
-             String(t.counterNumber) === tokenInput.trim()
+      (t) => (t.tokenString && t.tokenString.toLowerCase() === query.toLowerCase()) ||
+             (t.counterNumber !== undefined && String(t.counterNumber) === query)
     );
 
     if (found) {
@@ -52,7 +53,7 @@ export function TokensPage() {
       });
     } else {
       setLookupResult({
-        tokenString: tokenInput.trim(),
+        tokenString: query,
         status: 'Token Not Found or Invalid',
         valid: false,
       });
@@ -151,7 +152,7 @@ export function TokensPage() {
               <div key={i} className="py-3 flex items-center justify-between">
                 <div>
                   <span className="text-sm font-black text-brand-darkGreen block font-mono">
-                    {t.tokenString || `Counter #${t.counterNumber}`}
+                    {t.tokenString || (t.counterNumber !== undefined ? `Counter #${t.counterNumber}` : 'Active Token')}
                   </span>
                   <span className="text-brand-green">
                     {t.customerName} • {t.mealType} •{' '}

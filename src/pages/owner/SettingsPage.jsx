@@ -43,7 +43,7 @@ export function SettingsPage() {
       {/* Scheduler Status Card */}
       <Card
         title="Daily Automation Scheduler"
-        subtitle="Asia/Kolkata timezone • 4:00 PM Lunch Finalization • 11:00 PM Dinner Finalization"
+        subtitle="Asia/Kolkata timezone • 2:00 PM Lunch Finalization • 9:00 PM Dinner Finalization"
         icon={<Activity className="w-5 h-5 text-brand-orange" />}
         action={
           <Badge variant={isActive ? 'success' : 'danger'} size="sm">
@@ -139,8 +139,8 @@ export function SettingsPage() {
             {[
               { label: 'Lunch Attendance Cutoff', value: '10:30 AM IST', icon: <Clock className="w-3.5 h-3.5" /> },
               { label: 'Dinner Attendance Cutoff', value: '05:30 PM IST', icon: <Clock className="w-3.5 h-3.5" /> },
-              { label: 'Lunch Finalization (Auto)', value: '4:00 PM IST', icon: <Activity className="w-3.5 h-3.5" /> },
-              { label: 'Dinner Finalization (Auto)', value: '11:00 PM IST', icon: <Activity className="w-3.5 h-3.5" /> },
+              { label: 'Lunch Finalization (Auto)', value: '2:00 PM IST', icon: <Activity className="w-3.5 h-3.5" /> },
+              { label: 'Dinner Finalization (Auto)', value: '9:00 PM IST', icon: <Activity className="w-3.5 h-3.5" /> },
               { label: 'Saturday Schedule', value: 'Lunch only, Restaurant', icon: <Settings className="w-3.5 h-3.5" /> },
               { label: 'Sunday Schedule', value: 'Lunch only, no dinner', icon: <Settings className="w-3.5 h-3.5" /> },
               { label: 'Low Balance Threshold', value: '≤ 5 Tiffins', icon: <Shield className="w-3.5 h-3.5" /> },

@@ -63,7 +63,7 @@ export function AttendancePage() {
     setActionSuccess(null);
     try {
       const res = await generateTokenMutation.mutateAsync(attendanceId);
-      const tokenStr = res?.mealToken?.tokenString || res?.tokenString || 'Generated';
+      const tokenStr = res?.mealToken?.token || res?.mealToken?.tokenString || res?.token || res?.tokenString || 'Generated';
       setActionSuccess(`Meal token created: ${tokenStr}`);
       setTimeout(() => setActionSuccess(null), 4000);
     } catch (err) {
@@ -185,7 +185,7 @@ export function AttendancePage() {
                     <td className="py-3 px-3">
                       {row.mealToken ? (
                         <span className="font-mono text-xs font-black text-brand-darkGreen bg-brand-yellow/30 px-2 py-0.5 rounded border border-brand-orange/40">
-                          {row.mealToken.tokenString || `#${row.mealToken.counterNumber}`}
+                          {row.mealToken.token || row.mealToken.tokenString || (row.mealToken.serialNumber !== undefined || row.mealToken.counterNumber !== undefined ? `#${row.mealToken.serialNumber ?? row.mealToken.counterNumber}` : 'Issued')}
                         </span>
                       ) : row.status === 'PRESENT' ? (
                         <Button

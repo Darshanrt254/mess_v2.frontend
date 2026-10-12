@@ -114,8 +114,9 @@ export function useSendCustomerMessage() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ content }) => {
-      return await api.post('/customer/messages', { content });
+    mutationFn: async (payload) => {
+      const text = typeof payload === 'string' ? payload : (payload?.message || payload?.content || '');
+      return await api.post('/customer/messages', { message: text, content: text });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['customerMessages'] });

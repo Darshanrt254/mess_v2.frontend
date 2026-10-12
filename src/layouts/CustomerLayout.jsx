@@ -24,6 +24,7 @@ const CUSTOMER_MOBILE_NAV_ITEMS = [
   { to: '/customer/attendance', label: 'Meals', icon: UtensilsCrossed },
   { to: '/customer/calendar', label: 'Calendar', icon: Calendar },
   { to: '/customer/tokens', label: 'Tokens', icon: Ticket },
+  { to: '/customer/messages', label: 'Kitchen', icon: MessageSquare },
   { to: '/customer/profile', label: 'Profile', icon: User },
 ];
 

@@ -53,10 +53,10 @@ export function TokensPage() {
               </div>
               <div>
                 <span className="text-2xl sm:text-3xl font-black text-brand-yellow tracking-tight block font-mono">
-                  {activeToken.tokenString || activeToken.id}
+                  {activeToken.token || activeToken.tokenString || activeToken.tokenId || activeToken.id}
                 </span>
                 <p className="text-xs font-bold text-brand-creamLight/90 mt-1">
-                  {profile?.name || 'Customer'} • Counter #{activeToken.counterNumber || '1'}
+                  {profile?.name || 'Customer'} • Counter #{activeToken.counterNumber || activeToken.serialNumber || '1'}
                 </p>
                 <div className="flex items-center gap-2 mt-2">
                   <Badge variant="success" size="sm">

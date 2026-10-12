@@ -24,6 +24,7 @@ export function AttendancePage() {
 
   const lunchState = mealsData?.lunch;
   const dinnerState = mealsData?.dinner;
+  const dayOfWeek = mealsData?.dayOfWeek;
   const isPaymentSuspended = Boolean(mealsData?.isPaymentSuspended);
   const isServiceSuspended = Boolean(mealsData?.isServiceSuspended);
   const isSuspended = isPaymentSuspended || isServiceSuspended;
@@ -71,12 +72,12 @@ export function AttendancePage() {
         </Alert>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className={`grid grid-cols-1 ${dinnerState?.serviceAvailable ? 'sm:grid-cols-2' : ''} gap-4`}>
         {lunchState && (
           <MealAttendanceCard
             mealType="LUNCH"
             status={lunchState.status}
-            cutoffTime="10:30 AM"
+            cutoffTime={dayOfWeek === 'SUNDAY' ? '11:00 AM' : '10:30 AM'}
             location={lunchState.location}
             isLocked={lunchState.locked || isSuspended}
             onConfirmAttendance={handleConfirm}
@@ -93,6 +94,20 @@ export function AttendancePage() {
         )}
       </div>
 
+      {/* Sunday Note */}
+      {dayOfWeek === 'SUNDAY' && (
+        <div className="p-3.5 bg-brand-yellow/20 rounded-brand-sm border border-brand-orange/40 text-center font-nunito text-xs font-bold text-brand-green">
+          <span>🌙 Sunday Dinner: Kitchen is closed on Sunday evenings (No service).</span>
+        </div>
+      )}
+
+      {/* Saturday Schedule Note */}
+      {dayOfWeek === 'SATURDAY' && (
+        <div className="p-3 bg-brand-creamLight rounded-brand-sm border border-brand-orange/40 text-center font-nunito text-xs font-bold text-brand-green">
+          <span>🍴 Saturday Schedule: All meals (Lunch and Dinner) are served dine-in at the Restaurant. No college delivery or poll.</span>
+        </div>
+      )}
+
       <Card
         title="Attendance Guidelines"
         subtitle="How your tiffin balance is tracked"
@@ -101,8 +116,10 @@ export function AttendancePage() {
         <ul className="space-y-2 text-xs font-bold text-brand-green leading-relaxed list-disc list-inside font-nunito">
           <li>Marking <strong>Absent</strong> before cutoff saves your tiffin meal for later.</li>
           <li>Once you confirm attendance, the choice is locked for today in the backend.</li>
-          <li>Marking Lunch <strong>Present</strong> allows you to vote on the Lunch Delivery Poll (College vs Restaurant).</li>
-          <li>Marking Lunch <strong>Absent</strong> cancels today&apos;s lunch dispatch and removes the lunch poll.</li>
+          <li>Monday–Friday: Marking Lunch <strong>Present</strong> allows you to vote on the Lunch Delivery Poll (College vs Restaurant).</li>
+          <li>Saturday & Sunday: All lunches are served dine-in at the restaurant. No poll is required.</li>
+          <li>Saturday: Dinner service is available dine-in at the restaurant.</li>
+          <li>Sunday: Dinner service is closed.</li>
           <li>For long leave or vacation, contact the mess owner to arrange a scheduled service pause.</li>
         </ul>
       </Card>
