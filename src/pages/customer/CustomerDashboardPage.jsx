@@ -8,6 +8,7 @@ import { LoadingState } from '@/components/ui/LoadingState';
 import { MealAttendanceCard } from '@/components/meals/MealAttendanceCard';
 import { MealTokenCard } from '@/components/meals/MealTokenCard';
 import { LunchPollCard } from '@/components/poll/LunchPollCard';
+import { PollVoteModal } from '@/components/poll/PollVoteModal';
 import { AttendanceCalendarPreview } from '@/components/attendance/AttendanceCalendarPreview';
 import { SuspensionBanner } from '@/components/customers/SuspensionBanner';
 import { useAuth } from '@/hooks/useAuth';
@@ -55,6 +56,8 @@ export function CustomerDashboardPage() {
   const [kitchenNote, setKitchenNote] = useState('');
   const [messageSuccess, setMessageSuccess] = useState(false);
   const [actionError, setActionError] = useState(null);
+  const [tokenSuccessMessage, setTokenSuccessMessage] = useState(null);
+  const [isPollModalOpen, setIsPollModalOpen] = useState(false);
 
   if (isProfileLoading || isMealsLoading) {
     return (
@@ -75,6 +78,9 @@ export function CustomerDashboardPage() {
   const dinnerState = mealsData?.dinner;
   const pollState = mealsData?.poll;
 
+  const isPollLive = Boolean(pollState?.pollExists && pollState?.status === 'OPEN');
+  const hasVotedPoll = Boolean(pollState?.existingVote);
+
   const dayOfWeek = mealsData?.dayOfWeek || 'TODAY';
   const dateLabel = businessDate ? `Today: ${dayOfWeek}, ${businessDate}` : `Today: ${dayOfWeek}`;
 
@@ -82,7 +88,13 @@ export function CustomerDashboardPage() {
   const handleConfirmAttendance = async (mealType, choice) => {
     setActionError(null);
     try {
-      await markAttendanceMutation.mutateAsync({ mealType, status: choice });
+      const res = await markAttendanceMutation.mutateAsync({ mealType, status: choice });
+      if (res?.requiresPollVote) {
+        setIsPollModalOpen(true);
+      } else if (choice === 'PRESENT') {
+        setTokenSuccessMessage(`${mealType === 'LUNCH' ? 'Lunch' : 'Dinner'} token generated successfully!`);
+        setTimeout(() => setTokenSuccessMessage(null), 4000);
+      }
     } catch (err) {
       setActionError(err.message || 'Failed to update attendance');
     }
@@ -93,8 +105,12 @@ export function CustomerDashboardPage() {
     setActionError(null);
     try {
       await votePollMutation.mutateAsync({ location: choice });
+      setIsPollModalOpen(false);
+      setTokenSuccessMessage('Lunch token generated successfully!');
+      setTimeout(() => setTokenSuccessMessage(null), 4000);
     } catch (err) {
       setActionError(err.message || 'Failed to submit poll vote');
+      throw err;
     }
   };
 
@@ -113,18 +129,31 @@ export function CustomerDashboardPage() {
     }
   };
 
-  // Format token if available (lunch or dinner)
-  const tokenSource = lunchState?.mealToken || dinnerState?.mealToken;
-  const activeToken = tokenSource
-    ? {
-        ...tokenSource,
-        tokenId: tokenSource.token || tokenSource.tokenString || tokenSource.tokenNumber || tokenSource.tokenId || tokenSource.id,
-        tokenDisplayNumber: (tokenSource.serialNumber !== undefined || tokenSource.counterNumber !== undefined)
-          ? `#${tokenSource.serialNumber ?? tokenSource.counterNumber}`
-          : undefined,
-        targetLocation: (lunchState?.mealToken ? lunchState.location : dinnerState?.location) === 'COLLEGE' ? 'Campus Delivery' : 'Swayamsiddha Restaurant',
-      }
-    : null;
+  // Format tokens if available (both lunch and dinner)
+  const customerTokens = [];
+  if (lunchState?.mealToken) {
+    customerTokens.push({
+      ...lunchState.mealToken,
+      mealType: 'Lunch',
+      tokenId: lunchState.mealToken.token || lunchState.mealToken.tokenString || lunchState.mealToken.tokenId || lunchState.mealToken.id,
+      tokenDisplayNumber: (lunchState.mealToken.serialNumber !== undefined || lunchState.mealToken.counterNumber !== undefined)
+        ? `#${lunchState.mealToken.serialNumber ?? lunchState.mealToken.counterNumber}`
+        : undefined,
+      targetLocation: lunchState.location === 'COLLEGE' ? 'Campus Delivery' : 'Swayamsiddha Restaurant',
+    });
+  }
+  if (dinnerState?.mealToken) {
+    customerTokens.push({
+      ...dinnerState.mealToken,
+      mealType: 'Dinner',
+      tokenId: dinnerState.mealToken.token || dinnerState.mealToken.tokenString || dinnerState.mealToken.tokenId || dinnerState.mealToken.id,
+      tokenDisplayNumber: (dinnerState.mealToken.serialNumber !== undefined || dinnerState.mealToken.counterNumber !== undefined)
+        ? `#${dinnerState.mealToken.serialNumber ?? dinnerState.mealToken.counterNumber}`
+        : undefined,
+      targetLocation: dinnerState.location === 'COLLEGE' ? 'Campus Delivery' : 'Swayamsiddha Restaurant',
+    });
+  }
+  const activeToken = customerTokens[0] || null;
 
   const todayDayNumber = businessDate ? parseInt(businessDate.split('-')[2], 10) : new Date().getDate();
 
@@ -189,6 +218,12 @@ export function CustomerDashboardPage() {
       {actionError && (
         <Alert variant="danger" title="Action Failed">
           {actionError}
+        </Alert>
+      )}
+
+      {tokenSuccessMessage && (
+        <Alert variant="success" title="Token Generated">
+          {tokenSuccessMessage}
         </Alert>
       )}
 
@@ -302,6 +337,9 @@ export function CustomerDashboardPage() {
                 location={lunchState.location || (pollState?.existingVote)}
                 cutoffTime={dayOfWeek === 'SUNDAY' ? '11:00 AM' : '10:30 AM'}
                 isLocked={lunchState.locked}
+                isPollLive={isPollLive}
+                hasVotedPoll={hasVotedPoll}
+                onRequestPollVote={() => setIsPollModalOpen(true)}
                 onConfirmAttendance={handleConfirmAttendance}
               />
             )}
@@ -352,6 +390,7 @@ export function CustomerDashboardPage() {
 
           {/* 5. Today's Tokens */}
           <MealTokenCard
+            tokens={customerTokens}
             token={activeToken}
             isAttendanceAbsent={lunchState?.status === 'ABSENT' && (!dinnerState?.serviceAvailable || dinnerState?.status === 'ABSENT')}
             isAttendanceUnmarked={lunchState?.status === 'UNMARKED' && (!dinnerState?.serviceAvailable || dinnerState?.status === 'UNMARKED')}
@@ -399,6 +438,13 @@ export function CustomerDashboardPage() {
           </div>
         </form>
       </Card>
+
+      <PollVoteModal
+        isOpen={isPollModalOpen}
+        onClose={() => setIsPollModalOpen(false)}
+        onConfirm={handleConfirmPollVote}
+        isLoading={votePollMutation.isPending}
+      />
     </div>
   );
 }

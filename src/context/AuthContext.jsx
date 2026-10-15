@@ -1,4 +1,5 @@
 import React, { createContext, useState, useEffect, useCallback } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { api } from '@/services/api';
 
 export const AuthContext = createContext(null);
@@ -6,6 +7,7 @@ export const AuthContext = createContext(null);
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const queryClient = useQueryClient();
 
   // Check current session from backend on app boot
   const checkAuth = useCallback(async () => {
@@ -30,13 +32,14 @@ export function AuthProvider({ children }) {
     // Listen for 401 events from api client to reset session without redirect loops
     const handleUnauthorized = () => {
       setUser(null);
+      queryClient.clear();
     };
 
     window.addEventListener('auth:unauthorized', handleUnauthorized);
     return () => {
       window.removeEventListener('auth:unauthorized', handleUnauthorized);
     };
-  }, [checkAuth]);
+  }, [checkAuth, queryClient]);
 
   /**
    * Real Backend Login
@@ -46,6 +49,9 @@ export function AuthProvider({ children }) {
   const login = useCallback(async ({ loginIdentifier, identifier, password }) => {
     setIsLoading(true);
     try {
+      // Purge query cache immediately so previous user's cached queries don't leak
+      queryClient.clear();
+
       const payload = {
         loginIdentifier: loginIdentifier || identifier,
         password,
@@ -54,12 +60,14 @@ export function AuthProvider({ children }) {
       const data = await api.post('/auth/login', payload);
       const authenticatedUser = data.user;
 
+      // Clear again before setting new user to guarantee completely fresh fetch
+      queryClient.clear();
       setUser(authenticatedUser);
       return { user: authenticatedUser, role: authenticatedUser.role };
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [queryClient]);
 
   /**
    * Real Backend Logout
@@ -72,8 +80,9 @@ export function AuthProvider({ children }) {
       // ignore logout network errors
     } finally {
       setUser(null);
+      queryClient.clear();
     }
-  }, []);
+  }, [queryClient]);
 
   /**
    * Refreshes the user profile data from /api/auth/me

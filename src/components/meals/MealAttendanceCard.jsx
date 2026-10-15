@@ -11,6 +11,9 @@ export function MealAttendanceCard({
   location = null, // 'PENDING' | 'COLLEGE' | 'RESTAURANT' | null
   cutoffTime = '10:30 AM',
   isLocked = false,
+  isPollLive = false,
+  hasVotedPoll = false,
+  onRequestPollVote = null,
   onConfirmAttendance,
   className = '',
 }) {
@@ -24,6 +27,10 @@ export function MealAttendanceCard({
 
   const handleOpenConfirm = (choice) => {
     if (isLocked) return;
+    if (isLunch && choice === 'PRESENT' && isPollLive && !hasVotedPoll && onRequestPollVote) {
+      onRequestPollVote();
+      return;
+    }
     setPendingChoice(choice);
     setIsConfirmModalOpen(true);
   };
@@ -123,6 +130,17 @@ export function MealAttendanceCard({
             <span>Absent</span>
           </button>
         </div>
+
+        {/* If lunch attendance is present but pending poll vote */}
+        {isLunch && status === 'PRESENT' && !location && isPollLive && !hasVotedPoll && onRequestPollVote && (
+          <button
+            type="button"
+            onClick={onRequestPollVote}
+            className="mt-3 w-full py-2.5 px-3 bg-brand-orange hover:bg-brand-orange/90 text-white rounded-brand-sm font-black text-xs transition-all flex items-center justify-center gap-1.5 shadow-brand-sm"
+          >
+            <span>🗳️ Vote at Poll to Generate Token</span>
+          </button>
+        )}
 
         {/* Lock / Irreversibility Indicator */}
         {isLocked ? (

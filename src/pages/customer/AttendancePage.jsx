@@ -6,13 +6,17 @@ import { MealAttendanceCard } from '@/components/meals/MealAttendanceCard';
 import { Alert } from '@/components/ui/Alert';
 import { LoadingState } from '@/components/ui/LoadingState';
 import { Info } from 'lucide-react';
-import { useCustomerMealsToday, useMarkAttendance } from '@/hooks/useCustomer';
+import { useCustomerMealsToday, useMarkAttendance, useVotePoll } from '@/hooks/useCustomer';
+import { PollVoteModal } from '@/components/poll/PollVoteModal';
 import { PAYMENT_SUSPENSION_MESSAGE } from '@/config/constants';
 
 export function AttendancePage() {
   const { data: mealsData, isLoading, error } = useCustomerMealsToday();
   const markAttendanceMutation = useMarkAttendance();
+  const votePollMutation = useVotePoll();
   const [actionError, setActionError] = useState(null);
+  const [successMessage, setSuccessMessage] = useState(null);
+  const [isPollModalOpen, setIsPollModalOpen] = useState(false);
 
   if (isLoading) {
     return (
@@ -24,15 +28,38 @@ export function AttendancePage() {
 
   const lunchState = mealsData?.lunch;
   const dinnerState = mealsData?.dinner;
+  const pollState = mealsData?.poll;
   const dayOfWeek = mealsData?.dayOfWeek;
   const isPaymentSuspended = Boolean(mealsData?.isPaymentSuspended);
   const isServiceSuspended = Boolean(mealsData?.isServiceSuspended);
   const isSuspended = isPaymentSuspended || isServiceSuspended;
 
+  const isPollLive = Boolean(pollState?.pollExists && pollState?.status === 'OPEN');
+  const hasVotedPoll = Boolean(pollState?.existingVote);
+
+  const handleVotePollSubmit = async (location) => {
+    setActionError(null);
+    try {
+      await votePollMutation.mutateAsync({ location });
+      setIsPollModalOpen(false);
+      setSuccessMessage('Lunch token generated successfully!');
+      setTimeout(() => setSuccessMessage(null), 4000);
+    } catch (err) {
+      setActionError(err.message || 'Failed to vote and generate token');
+      throw err;
+    }
+  };
+
   const handleConfirm = async (mealType, choice) => {
     setActionError(null);
     try {
-      await markAttendanceMutation.mutateAsync({ mealType, status: choice });
+      const res = await markAttendanceMutation.mutateAsync({ mealType, status: choice });
+      if (res?.requiresPollVote) {
+        setIsPollModalOpen(true);
+      } else if (choice === 'PRESENT') {
+        setSuccessMessage(`${mealType === 'LUNCH' ? 'Lunch' : 'Dinner'} token generated successfully!`);
+        setTimeout(() => setSuccessMessage(null), 4000);
+      }
     } catch (err) {
       setActionError(err.message || 'Failed to update attendance');
     }
@@ -49,6 +76,12 @@ export function AttendancePage() {
       {actionError && (
         <Alert variant="danger" title="Error">
           {actionError}
+        </Alert>
+      )}
+
+      {successMessage && (
+        <Alert variant="success" title="Token Generated">
+          {successMessage}
         </Alert>
       )}
 
@@ -78,8 +111,11 @@ export function AttendancePage() {
             mealType="LUNCH"
             status={lunchState.status}
             cutoffTime={dayOfWeek === 'SUNDAY' ? '11:00 AM' : '10:30 AM'}
-            location={lunchState.location}
+            location={lunchState.location || pollState?.existingVote}
             isLocked={lunchState.locked || isSuspended}
+            isPollLive={isPollLive}
+            hasVotedPoll={hasVotedPoll}
+            onRequestPollVote={() => setIsPollModalOpen(true)}
             onConfirmAttendance={handleConfirm}
           />
         )}
@@ -123,6 +159,13 @@ export function AttendancePage() {
           <li>For long leave or vacation, contact the mess owner to arrange a scheduled service pause.</li>
         </ul>
       </Card>
+
+      <PollVoteModal
+        isOpen={isPollModalOpen}
+        onClose={() => setIsPollModalOpen(false)}
+        onConfirm={handleVotePollSubmit}
+        isLoading={votePollMutation.isPending}
+      />
     </div>
   );
 }

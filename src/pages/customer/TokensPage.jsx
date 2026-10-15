@@ -21,7 +21,22 @@ export function TokensPage() {
 
   const lunchToken = mealsData?.lunch?.mealToken;
   const dinnerToken = mealsData?.dinner?.mealToken;
-  const activeToken = lunchToken || dinnerToken;
+
+  const activeTokens = [];
+  if (lunchToken) {
+    activeTokens.push({
+      ...lunchToken,
+      mealType: lunchToken.mealType || 'LUNCH',
+      location: mealsData?.lunch?.location || lunchToken.location || 'RESTAURANT',
+    });
+  }
+  if (dinnerToken) {
+    activeTokens.push({
+      ...dinnerToken,
+      mealType: dinnerToken.mealType || 'DINNER',
+      location: mealsData?.dinner?.location || dinnerToken.location || 'RESTAURANT',
+    });
+  }
 
   return (
     <div className="space-y-6">
@@ -37,39 +52,47 @@ export function TokensPage() {
         </Alert>
       )}
 
-      {/* Active Token Card */}
-      {activeToken ? (
-        <Card
-          variant="green"
-          title="Active Meal Token"
-          subtitle={`Valid for today's ${activeToken.mealType || 'Meal'} service`}
-          icon={<Ticket className="w-5 h-5 text-brand-yellow" />}
-          action={<Badge variant="brand" size="sm">ACTIVE</Badge>}
-        >
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-6 py-4 font-nunito">
-            <div className="flex items-center gap-4">
-              <div className="w-24 h-24 bg-white rounded-brand-sm p-2 flex items-center justify-center border-2 border-brand-orange shadow-inner">
-                <QrCode className="w-20 h-20 text-brand-darkGreen" />
-              </div>
-              <div>
-                <span className="text-2xl sm:text-3xl font-black text-brand-yellow tracking-tight block font-mono">
-                  {activeToken.token || activeToken.tokenString || activeToken.tokenId || activeToken.id}
-                </span>
-                <p className="text-xs font-bold text-brand-creamLight/90 mt-1">
-                  {profile?.name || 'Customer'} • Counter #{activeToken.counterNumber || activeToken.serialNumber || '1'}
-                </p>
-                <div className="flex items-center gap-2 mt-2">
-                  <Badge variant="success" size="sm">
-                    <CheckCircle className="w-3 h-3 mr-1 inline" /> Verified
-                  </Badge>
-                  <span className="text-[11px] font-bold text-brand-yellow">
-                    Location: {activeToken.location === 'COLLEGE' ? 'Campus Delivery' : 'Restaurant Dine-in'}
-                  </span>
+      {/* Active Token Cards */}
+      {activeTokens.length > 0 ? (
+        <div className="space-y-4">
+          {activeTokens.map((token, idx) => (
+            <Card
+              key={token.id || token.token || idx}
+              variant="green"
+              title={`Active ${token.mealType === 'LUNCH' ? 'Lunch' : 'Dinner'} Token`}
+              subtitle={`Valid for today's ${token.mealType} service`}
+              icon={<Ticket className="w-5 h-5 text-brand-yellow" />}
+              action={<Badge variant="brand" size="sm">ACTIVE</Badge>}
+            >
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-6 py-4 font-nunito">
+                <div className="flex items-center gap-4">
+                  <div className="w-24 h-24 bg-white rounded-brand-sm p-2 flex items-center justify-center border-2 border-brand-orange shadow-inner shrink-0">
+                    <QrCode className="w-20 h-20 text-brand-darkGreen" />
+                  </div>
+                  <div>
+                    <span className="text-2xl sm:text-3xl font-black text-brand-yellow tracking-tight block font-mono">
+                      {token.token || token.tokenString || token.tokenId || token.id}
+                    </span>
+                    <p className="text-xs font-bold text-brand-creamLight/90 mt-1">
+                      {profile?.name || 'Customer'} • Counter #{token.counterNumber || token.serialNumber || '1'}
+                    </p>
+                    <div className="flex flex-wrap items-center gap-2 mt-2">
+                      <Badge variant="success" size="sm">
+                        <CheckCircle className="w-3 h-3 mr-1 inline" /> Verified
+                      </Badge>
+                      <span className="text-[11px] font-bold text-brand-yellow">
+                        Location: {token.location === 'COLLEGE' ? 'Campus Delivery' : 'Restaurant Dine-in'}
+                      </span>
+                      <span className="text-[11px] font-bold text-brand-creamLight/80">
+                        • Meal: {token.mealType}
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-          </div>
-        </Card>
+            </Card>
+          ))}
+        </div>
       ) : (
         <Card
           title="No Active Meal Token"
