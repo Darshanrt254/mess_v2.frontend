@@ -38,6 +38,10 @@ export function TokensPage() {
     });
   }
 
+  const isLunchPendingToken = mealsData?.lunch?.status === 'PRESENT' && !lunchToken;
+  const isDinnerPendingToken = mealsData?.dinner?.status === 'PRESENT' && !dinnerToken;
+  const hasPendingToken = isLunchPendingToken || isDinnerPendingToken;
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -49,6 +53,12 @@ export function TokensPage() {
       {error && (
         <Alert variant="danger" title="Error">
           {error.message}
+        </Alert>
+      )}
+
+      {hasPendingToken && activeTokens.length === 0 && (
+        <Alert variant="warning" title="Token Generation Pending">
+          Your attendance is recorded as Present. The digital token will appear here as soon as backend processing or poll voting completes.
         </Alert>
       )}
 
@@ -93,6 +103,21 @@ export function TokensPage() {
             </Card>
           ))}
         </div>
+      ) : hasPendingToken ? (
+        <Card
+          title="Token Awaiting Confirmation"
+          subtitle="Attendance confirmed Present"
+          icon={<Clock className="w-5 h-5 text-brand-orange" />}
+        >
+          <div className="p-6 text-center font-nunito space-y-2">
+            <p className="text-sm font-black text-brand-darkGreen">
+              Your attendance choice is confirmed.
+            </p>
+            <p className="text-xs font-bold text-brand-green">
+              Digital tokens are generated upon location poll submission or finalization by mess management.
+            </p>
+          </div>
+        </Card>
       ) : (
         <Card
           title="No Active Meal Token"

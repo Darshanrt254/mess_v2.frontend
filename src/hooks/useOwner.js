@@ -186,9 +186,25 @@ export function useRechargeCustomer() {
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['ownerCustomer', variables.customerId] });
+      queryClient.invalidateQueries({ queryKey: ['ownerCustomerPackages', variables.customerId] });
       queryClient.invalidateQueries({ queryKey: ['ownerCustomers'] });
       queryClient.invalidateQueries({ queryKey: ['analytics'] });
     },
+  });
+}
+
+/**
+ * Owner single customer meal packages list
+ */
+export function useOwnerCustomerPackages(customerId) {
+  return useQuery({
+    queryKey: ['ownerCustomerPackages', customerId],
+    queryFn: async () => {
+      if (!customerId) return [];
+      const data = await api.get(`/owner/customers/${customerId}/packages`);
+      return data?.packages || [];
+    },
+    enabled: Boolean(customerId),
   });
 }
 

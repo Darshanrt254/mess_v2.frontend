@@ -3,8 +3,11 @@
  * Connects to the Node.js/Express backend using credentials: 'include' for HttpOnly cookie sessions.
  */
 
-const BACKEND_URL = (import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000').replace(/\/+$/, '');
-const API_BASE_URL = `${BACKEND_URL}/api`;
+const rawBackendUrl = import.meta.env?.VITE_BACKEND_URL;
+const BACKEND_URL = rawBackendUrl !== undefined
+  ? rawBackendUrl.replace(/\/+$/, '')
+  : (import.meta.env?.DEV ? 'http://localhost:5000' : '');
+const API_BASE_URL = BACKEND_URL ? `${BACKEND_URL}/api` : '/api';
 
 export class ApiError extends Error {
   constructor(message, status, data) {

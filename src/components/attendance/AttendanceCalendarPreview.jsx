@@ -151,21 +151,35 @@ export function AttendanceCalendarPreview({
                 Lunch
               </span>
               <div className="space-y-1 text-brand-darkGreen font-bold">
-                <div>
-                  Status: <span className="font-black">{formatStatus(selectedDay.lunch)}</span>
-                </div>
-                <div>
-                  Location: <span className="font-black">{formatLocation(selectedDay.lunchLocation)}</span>
-                </div>
-                <div>
-                  Token:{' '}
-                  <span className="font-mono font-black">
-                    {selectedDay.lunchToken?.tokenString ||
-                      selectedDay.lunchToken?.tokenNumber ||
-                      selectedDay.lunchToken?.id ||
-                      '—'}
-                  </span>
-                </div>
+                {selectedDay.lunchServiceAvailable === false ? (
+                  <div className="text-brand-orange font-black">
+                    {selectedDay.lunchReason === 'PLAN_EXCLUDED'
+                      ? 'Excluded (Meal Plan)'
+                      : selectedDay.lunchReason === 'PRE_ENROLLMENT'
+                      ? 'Pre-Enrollment'
+                      : selectedDay.lunchReason === 'SERVICE_SUSPENDED'
+                      ? 'Service Suspended'
+                      : 'No Service'}
+                  </div>
+                ) : (
+                  <>
+                    <div>
+                      Status: <span className="font-black">{formatStatus(selectedDay.lunch)}</span>
+                    </div>
+                    <div>
+                      Location: <span className="font-black">{formatLocation(selectedDay.lunchLocation)}</span>
+                    </div>
+                    <div>
+                      Token:{' '}
+                      <span className="font-mono font-black">
+                        {selectedDay.lunchToken?.tokenString ||
+                          selectedDay.lunchToken?.tokenNumber ||
+                          selectedDay.lunchToken?.id ||
+                          '—'}
+                      </span>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
 
@@ -176,7 +190,15 @@ export function AttendanceCalendarPreview({
               </span>
               <div className="space-y-1 text-brand-darkGreen font-bold">
                 {selectedDay.dayOfWeek === 'SUNDAY' || selectedDay.dinnerServiceAvailable === false ? (
-                  <div className="text-brand-orange font-black">No Service (Sunday)</div>
+                  <div className="text-brand-orange font-black">
+                    {selectedDay.dinnerReason === 'PLAN_EXCLUDED'
+                      ? 'Excluded (Meal Plan)'
+                      : selectedDay.dinnerReason === 'PRE_ENROLLMENT'
+                      ? 'Pre-Enrollment'
+                      : selectedDay.dinnerReason === 'SERVICE_SUSPENDED'
+                      ? 'Service Suspended'
+                      : 'No Service (Sunday)'}
+                  </div>
                 ) : (
                   <>
                     <div>

@@ -11,11 +11,13 @@ import { LunchPollCard } from '@/components/poll/LunchPollCard';
 import { PollVoteModal } from '@/components/poll/PollVoteModal';
 import { AttendanceCalendarPreview } from '@/components/attendance/AttendanceCalendarPreview';
 import { SuspensionBanner } from '@/components/customers/SuspensionBanner';
+import { MealPackageListCard } from '@/components/packages/MealPackageListCard';
 import { useAuth } from '@/hooks/useAuth';
 import {
   useCustomerProfile,
   useCustomerMealsToday,
   useCustomerAttendanceHistory,
+  useCustomerPackages,
   useMarkAttendance,
   useVotePoll,
   useSendCustomerMessage,
@@ -27,6 +29,11 @@ import {
   CheckCircle,
 } from 'lucide-react';
 import { SUPPORT_CONTACT } from '@/config/constants';
+import {
+  formatPlanLabel,
+  isMealEligibleForPlan,
+  isPastMealCutoff,
+} from '@/utils/planLabels';
 
 export function CustomerDashboardPage() {
   const { user } = useAuth();
@@ -34,6 +41,7 @@ export function CustomerDashboardPage() {
   // Real backend queries
   const { data: customerProfile, isLoading: isProfileLoading } = useCustomerProfile();
   const { data: mealsData, isLoading: isMealsLoading, error: mealsError } = useCustomerMealsToday();
+  const { data: customerPackages = [], isLoading: isPackagesLoading, error: packagesError } = useCustomerPackages();
 
   // Derive month range from backend businessDate for calendar history
   const businessDate = mealsData?.businessDate || '';
@@ -82,10 +90,23 @@ export function CustomerDashboardPage() {
   const hasVotedPoll = Boolean(pollState?.existingVote);
 
   const dayOfWeek = mealsData?.dayOfWeek || 'TODAY';
+  const isSunday = dayOfWeek === 'SUNDAY';
   const dateLabel = businessDate ? `Today: ${dayOfWeek}, ${businessDate}` : `Today: ${dayOfWeek}`;
+
+  // Customer meal plan & meal eligibility
+  const customerPlan = customerProfile?.tiffinPlan || mealsData?.tiffinPlan || 'BOTH';
+  const isLunchPlanEligible = isMealEligibleForPlan('LUNCH', customerPlan);
+  const isDinnerPlanEligible = isMealEligibleForPlan('DINNER', customerPlan);
+
+  const isLunchAvailable = isLunchPlanEligible && lunchState?.serviceAvailable !== false;
+  const isDinnerAvailable = isDinnerPlanEligible && !isSunday && dinnerState?.serviceAvailable !== false;
+
+  const isLunchCutoff = isPastMealCutoff('LUNCH');
+  const isDinnerCutoff = isPastMealCutoff('DINNER');
 
   // Attendance handlers
   const handleConfirmAttendance = async (mealType, choice) => {
+    if (markAttendanceMutation.isPending) return;
     setActionError(null);
     try {
       const res = await markAttendanceMutation.mutateAsync({ mealType, status: choice });
@@ -252,7 +273,7 @@ export function CustomerDashboardPage() {
       <Card
         variant="green"
         title="Tiffin Account Balance"
-        subtitle="Current Plan: Regular Tiffin Service"
+        subtitle={`Current Plan: ${formatPlanLabel(customerPlan)}`}
         icon={<Utensils className="w-5 h-5 text-brand-yellow" />}
         action={
           <Badge variant="brand" size="sm">
@@ -287,6 +308,13 @@ export function CustomerDashboardPage() {
           </div>
         </div>
       </Card>
+
+      {/* 2.5 Active Meal Packages */}
+      <MealPackageListCard
+        packages={customerPackages}
+        isLoading={isPackagesLoading}
+        error={packagesError}
+      />
 
       {/* Zero balance / Payment suspension state */}
       {isPaymentSuspended && (
@@ -328,32 +356,36 @@ export function CustomerDashboardPage() {
       {!isSuspended && (
         <>
           {/* 3. Today's Meals (Lunch & Dinner Attendance Cards) */}
-          <div className={`grid grid-cols-1 ${dinnerState?.serviceAvailable ? 'sm:grid-cols-2' : ''} gap-4`}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* Lunch Card */}
-            {lunchState && (
-              <MealAttendanceCard
-                mealType="LUNCH"
-                status={lunchState.status}
-                location={lunchState.location || (pollState?.existingVote)}
-                cutoffTime={dayOfWeek === 'SUNDAY' ? '11:00 AM' : '10:30 AM'}
-                isLocked={lunchState.locked}
-                isPollLive={isPollLive}
-                hasVotedPoll={hasVotedPoll}
-                onRequestPollVote={() => setIsPollModalOpen(true)}
-                onConfirmAttendance={handleConfirmAttendance}
-              />
-            )}
+            <MealAttendanceCard
+              mealType="LUNCH"
+              status={lunchState?.status}
+              location={lunchState?.location || (pollState?.existingVote)}
+              cutoffTime="02:00 PM IST"
+              isLocked={lunchState?.locked}
+              isPollLive={isPollLive}
+              hasVotedPoll={hasVotedPoll}
+              serviceAvailable={isLunchAvailable}
+              unavailableReason={!isLunchPlanEligible ? 'PLAN_EXCLUDED' : null}
+              isPastCutoff={isLunchCutoff}
+              isSubmitting={markAttendanceMutation.isPending}
+              onRequestPollVote={() => setIsPollModalOpen(true)}
+              onConfirmAttendance={handleConfirmAttendance}
+            />
 
-            {/* Dinner Card (Shown when dinner service is available) */}
-            {dinnerState?.serviceAvailable ? (
-              <MealAttendanceCard
-                mealType="DINNER"
-                status={dinnerState.status}
-                cutoffTime="05:30 PM"
-                isLocked={dinnerState.locked}
-                onConfirmAttendance={handleConfirmAttendance}
-              />
-            ) : null}
+            {/* Dinner Card */}
+            <MealAttendanceCard
+              mealType="DINNER"
+              status={dinnerState?.status}
+              cutoffTime="09:00 PM IST"
+              isLocked={dinnerState?.locked}
+              serviceAvailable={isDinnerAvailable}
+              unavailableReason={!isDinnerPlanEligible ? 'PLAN_EXCLUDED' : isSunday ? 'SUNDAY_DINNER_EXCLUDED' : null}
+              isPastCutoff={isDinnerCutoff}
+              isSubmitting={markAttendanceMutation.isPending}
+              onConfirmAttendance={handleConfirmAttendance}
+            />
           </div>
 
           {/* Sunday Note */}

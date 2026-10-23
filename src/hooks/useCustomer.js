@@ -124,3 +124,16 @@ export function useSendCustomerMessage() {
   });
 }
 
+/**
+ * Hook to fetch current customer meal packages
+ */
+export function useCustomerPackages() {
+  return useQuery({
+    queryKey: ['customerPackages'],
+    queryFn: async () => {
+      const data = await api.get('/customer/packages');
+      return data?.packages || [];
+    },
+  });
+}
+

@@ -11,6 +11,7 @@ import { Alert } from '@/components/ui/Alert';
 import { LoadingState } from '@/components/ui/LoadingState';
 import { Users, UserPlus, Search, ArrowRight, Phone } from 'lucide-react';
 import { useOwnerCustomers, useCreateCustomer } from '@/hooks/useOwner';
+import { formatPlanLabel, TIFFIN_PLAN_OPTIONS } from '@/utils/planLabels';
 
 export function CustomersPage() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -24,6 +25,7 @@ export function CustomersPage() {
   const [newLoginId, setNewLoginId] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [newInitialTiffins, setNewInitialTiffins] = useState(56);
+  const [newTiffinPlan, setNewTiffinPlan] = useState('BOTH');
 
   const { data, isLoading, error } = useOwnerCustomers();
   const createCustomerMutation = useCreateCustomer();
@@ -77,6 +79,7 @@ export function CustomersPage() {
         loginIdentifier: newLoginId.trim(),
         password: newPassword.trim(),
         initialTiffins: Number(newInitialTiffins) || 56,
+        tiffinPlan: newTiffinPlan,
       });
       setIsAddModalOpen(false);
       setNewName('');
@@ -84,6 +87,7 @@ export function CustomersPage() {
       setNewLoginId('');
       setNewPassword('');
       setNewInitialTiffins(56);
+      setNewTiffinPlan('BOTH');
     } catch (err) {
       setModalError(err.message || 'Failed to create customer');
     }
@@ -169,6 +173,7 @@ export function CustomersPage() {
                   <th className="py-3 px-3">Customer</th>
                   <th className="py-3 px-3">Contact</th>
                   <th className="py-3 px-3">Login ID</th>
+                  <th className="py-3 px-3 text-center">Meal Plan</th>
                   <th className="py-3 px-3 text-center">Meals Left</th>
                   <th className="py-3 px-3 text-center">Status</th>
                   <th className="py-3 px-3 text-right">Actions</th>
@@ -191,6 +196,11 @@ export function CustomersPage() {
                     </td>
                     <td className="py-3.5 px-3 text-xs text-brand-green font-mono">
                       {cust.user?.loginIdentifier || cust.phone}
+                    </td>
+                    <td className="py-3.5 px-3 text-center">
+                      <Badge variant="brand" size="sm">
+                        {formatPlanLabel(cust.tiffinPlan)}
+                      </Badge>
                     </td>
                     <td className="py-3.5 px-3 text-center">
                       <span className={`text-base font-black ${cust.isPaymentSuspended ? 'text-red-600' : cust.remainingTiffins <= 5 ? 'text-rose-600' : 'text-brand-darkGreen'}`}>
@@ -272,6 +282,25 @@ export function CustomersPage() {
             onChange={(e) => setNewPassword(e.target.value)}
             required
           />
+          <div className="space-y-1">
+            <label className="block text-xs font-black text-brand-darkGreen uppercase tracking-wide">
+              Customer Meal Plan
+            </label>
+            <select
+              value={newTiffinPlan}
+              onChange={(e) => setNewTiffinPlan(e.target.value)}
+              className="w-full bg-brand-cream border-2.5 border-brand-orange rounded-brand-sm p-2.5 text-xs font-bold text-brand-darkGreen outline-none focus:ring-2 focus:ring-brand-orange/30 cursor-pointer"
+            >
+              {TIFFIN_PLAN_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+            <p className="text-[11px] font-bold text-brand-green">
+              Select lunch only, dinner only, or regular lunch and dinner service.
+            </p>
+          </div>
           <Input
             label="Initial Tiffin Balance"
             type="number"

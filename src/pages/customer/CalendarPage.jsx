@@ -6,21 +6,28 @@ import { Badge } from '@/components/ui/Badge';
 import { LoadingState } from '@/components/ui/LoadingState';
 import { Alert } from '@/components/ui/Alert';
 import { useCustomerMealsToday, useCustomerAttendanceHistory } from '@/hooks/useCustomer';
+import { clampToReportingBoundary } from '@/utils/planLabels';
 
 export function CalendarPage() {
   const { data: mealsData, isLoading: isMealsLoading, error: mealsError } = useCustomerMealsToday();
 
-  // Derive initial year and month from backend businessDate (or current date)
+  // Derive initial year and month from backend businessDate, respecting October 2026 boundary
   const businessDate = mealsData?.businessDate || '';
   const initialDate = businessDate ? new Date(`${businessDate}T12:00:00Z`) : new Date();
 
-  const [currentYear, setCurrentYear] = useState(initialDate.getFullYear() || 2026);
-  const [currentMonth, setCurrentMonth] = useState(initialDate.getMonth() + 1 || 9); // 1-indexed
+  const parsedYear = initialDate.getFullYear() || 2026;
+  const parsedMonth = initialDate.getMonth() + 1 || 10;
+  const initialYear = parsedYear < 2026 ? 2026 : parsedYear;
+  const initialMonth = (initialYear === 2026 && parsedMonth < 10) ? 10 : parsedMonth;
 
-  // Format from and to boundaries for the selected month
+  const [currentYear, setCurrentYear] = useState(initialYear);
+  const [currentMonth, setCurrentMonth] = useState(initialMonth); // 1-indexed
+
+  // Format from and to boundaries for the selected month, clamped to 2026-10-01
   const monthStr = String(currentMonth).padStart(2, '0');
   const lastDay = new Date(currentYear, currentMonth, 0).getDate();
-  const from = `${currentYear}-${monthStr}-01`;
+  const rawFrom = `${currentYear}-${monthStr}-01`;
+  const from = clampToReportingBoundary(rawFrom);
   const to = `${currentYear}-${monthStr}-${String(lastDay).padStart(2, '0')}`;
 
   const {
@@ -29,7 +36,11 @@ export function CalendarPage() {
     error: historyError,
   } = useCustomerAttendanceHistory({ from, to });
 
+  // Reporting boundary constraint: do not navigate earlier than October 2026
+  const canGoPrev = currentYear > 2026 || (currentYear === 2026 && currentMonth > 10);
+
   const handlePrevMonth = () => {
+    if (!canGoPrev) return;
     if (currentMonth === 1) {
       setCurrentYear((y) => y - 1);
       setCurrentMonth(12);
@@ -86,6 +97,9 @@ export function CalendarPage() {
         dinnerLocation: d.dinner?.location,
         lunchToken: d.lunch?.mealToken,
         dinnerToken: d.dinner?.mealToken,
+        lunchReason: d.lunch?.reason,
+        dinnerReason: d.dinner?.reason,
+        lunchServiceAvailable: d.lunch?.serviceAvailable,
         dinnerServiceAvailable: d.dinner?.serviceAvailable,
         isToday,
         state,
@@ -142,7 +156,7 @@ export function CalendarPage() {
         <AttendanceCalendarPreview
           monthName={monthLabel}
           days={calendarDays}
-          onPrevMonth={handlePrevMonth}
+          onPrevMonth={canGoPrev ? handlePrevMonth : undefined}
           onNextMonth={handleNextMonth}
           action={
             <Badge variant="brand" size="sm">

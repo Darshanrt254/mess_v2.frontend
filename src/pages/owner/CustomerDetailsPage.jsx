@@ -25,17 +25,21 @@ import {
 } from 'lucide-react';
 import {
   useOwnerCustomerDetail,
+  useOwnerCustomerPackages,
   useCustomerSuspensions,
   useRechargeCustomer,
   useCreateSuspension,
   useUnsuspendCustomer,
 } from '@/hooks/useOwner';
+import { MealPackageListCard } from '@/components/packages/MealPackageListCard';
+import { formatPlanLabel } from '@/utils/planLabels';
 
 export function CustomerDetailsPage() {
   const { id } = useParams();
 
   const { data: customer, isLoading, error } = useOwnerCustomerDetail(id);
   const { data: suspensions = [] } = useCustomerSuspensions(id);
+  const { data: packages = [], isLoading: isPackagesLoading, error: packagesError } = useOwnerCustomerPackages(id);
 
   const rechargeMutation = useRechargeCustomer();
   const createSuspensionMutation = useCreateSuspension();
@@ -99,6 +103,7 @@ export function CustomerDetailsPage() {
 
   const handleRecharge = async (e) => {
     e.preventDefault();
+    if (rechargeMutation.isPending) return;
     setActionError(null);
     const count = parseInt(rechargeAmount, 10);
     if (isNaN(count) || count <= 0) {
@@ -259,17 +264,26 @@ export function CustomerDetailsPage() {
                 <span className="text-brand-green">Status:</span>
                 <span className="text-brand-darkGreen font-black">{customer.serviceStatus}</span>
               </div>
+              <div className="flex justify-between">
+                <span className="text-brand-green">Meal Plan:</span>
+                <span className="text-brand-darkGreen font-black">{formatPlanLabel(customer.tiffinPlan)}</span>
+              </div>
             </div>
           </div>
         </Card>
 
         {/* Right Column: Statistics and Ledger */}
         <div className="md:col-span-2 space-y-6">
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <StatCard
               label="Tiffins Remaining"
               value={remainingTiffins}
               variant={remainingTiffins === 0 ? 'yellow' : remainingTiffins <= 5 ? 'yellow' : 'green'}
+            />
+            <StatCard
+              label="Meal Packages"
+              value={packages.length}
+              variant="default"
             />
             <StatCard
               label="Ledger Records"
@@ -319,6 +333,15 @@ export function CustomerDetailsPage() {
             </Card>
           )}
 
+          {/* Meal Packages History */}
+          <MealPackageListCard
+            packages={packages}
+            isLoading={isPackagesLoading}
+            error={packagesError}
+            title="Meal Packages History"
+            subtitle="Independently expiring 50-calendar-day meal subscriptions for this customer"
+          />
+
           {/* Tiffin Ledger History */}
           <Card
             title="Tiffin Ledger Transactions"
@@ -334,10 +357,16 @@ export function CustomerDetailsPage() {
                 {transactions.map((tx) => (
                   <div key={tx.id} className="py-2.5 flex items-center justify-between">
                     <div>
-                      <span className="text-brand-darkGreen font-black block font-mono">
-                        {tx.type}
-                      </span>
-                      <span className="text-[10px] text-brand-green">
+                      {tx.type === 'PACKAGE_EXPIRED' ? (
+                        <span className="font-mono text-xs bg-red-100 text-red-800 px-1.5 py-0.5 rounded border border-red-300 font-black inline-block">
+                          PACKAGE_EXPIRED
+                        </span>
+                      ) : (
+                        <span className="text-brand-darkGreen font-black block font-mono">
+                          {tx.type}
+                        </span>
+                      )}
+                      <span className="text-[10px] text-brand-green block">
                         {new Date(tx.createdAt).toLocaleString('en-IN', {
                           day: '2-digit',
                           month: 'short',
@@ -393,7 +422,7 @@ export function CustomerDetailsPage() {
             value={rechargeAmount}
             onChange={(e) => setRechargeAmount(e.target.value)}
             required
-            helperText="Direct cash recharge recorded in customer ledger."
+            helperText="Creates a new independent package with 50-calendar-day validity from today. Older packages are not extended."
           />
         </form>
       </Modal>
